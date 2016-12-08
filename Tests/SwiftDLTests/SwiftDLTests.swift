@@ -16,8 +16,10 @@ class SwiftDLTests: XCTestCase {
         
         let expectation = self.expectation(description: "")
         
+        var progressSet: Set<String> = []
         downloader.handleProgress { bytesDownloaded, bytesExpectedToDownload in
-            print("\(bytesDownloaded) / \(bytesExpectedToDownload)")
+            print("\(bytesDownloaded) / \(bytesExpectedToDownload!)")
+            progressSet.insert("\(bytesDownloaded) / \(bytesExpectedToDownload!)")
         }
         
         downloader.handleCompletion { result in
@@ -38,6 +40,9 @@ class SwiftDLTests: XCTestCase {
         }
         
         waitForExpectations(timeout: 5.0, handler: nil)
+        
+        XCTAssertTrue(progressSet.contains("11 / 112"))
+        XCTAssertTrue(progressSet.contains("112 / 112"))
     }
     
     func testProgress() {
