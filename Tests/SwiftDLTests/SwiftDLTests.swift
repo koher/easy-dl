@@ -126,12 +126,49 @@ class SwiftDLTests: XCTestCase {
             }
         }
     }
+    
+    func testCancel() {
+        let dir: String = Bundle(for: type(of: self)).resourcePath!
+        
+        let url1 = URL(string: "http://koherent.org/pi/pi100000.txt")!
+        let url2 = URL(string: "http://koherent.org/pi/pi1000000.txt")!
+        let file1 = (dir as NSString).appendingPathComponent("pi100000.txt")
+        let file2 = (dir as NSString).appendingPathComponent("pi1000000.txt")
+        
+        let fileManager = FileManager.default
+        try? fileManager.removeItem(at: URL(fileURLWithPath: file1))
+        try? fileManager.removeItem(at: URL(fileURLWithPath: file2))
+        
+        let downloader = Downloader(items: [(url1, file1), (url2, file2)], commonRequestHeaders: ["Accept-Encoding": "identity"])
+        
+        let expectation = self.expectation(description: "")
+        
+        downloader.handleCompletion { result in
+            switch result {
+            case .success:
+                XCTFail()
+            case .canceled:
+                break
+            case let .failure(error):
+                XCTFail("\(error)")
+            }
+            expectation.fulfill()
+        }
+        
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            downloader.cancel()
+        }
+        
+        waitForExpectations(timeout: 20.0, handler: nil)
+    }
 
     static var allTests : [(String, (SwiftDLTests) -> () throws -> Void)] {
         return [
             ("testExample", testExample),
             ("testProgress", testProgress),
             ("testCompletion", testCompletion),
+            ("testCancel", testCancel),
         ]
     }
 }
