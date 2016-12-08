@@ -2,6 +2,7 @@ import Foundation
 
 public class Downloader {
     public let items: [Item]
+    public let commonRequestHeaders: [String: String]?
     
     private var progressHandlers: [(Int64, Int64?) -> ()] = []
     private var completionHandlers: [(Result) -> ()] = []
@@ -15,8 +16,9 @@ public class Downloader {
     private var currentItem: Item! = nil
     private var currentCallback: ((Error?) -> ())? = nil
 
-    public init(items: [Item], needsPreciseProgress: Bool = true) {
+    public init(items: [Item], needsPreciseProgress: Bool = true, commonRequestHeaders: [String: String]? = nil) {
         self.items = items
+        self.commonRequestHeaders = commonRequestHeaders
         
         session = URLSession(configuration: .default, delegate: Delegate(downloader: self), delegateQueue: .main)
         
@@ -88,6 +90,9 @@ public class Downloader {
     private func contentLength(of item: Item, _ callback: @escaping (Int64?, Error?) -> ()) {
         let request = NSMutableURLRequest(url: item.url)
         request.httpMethod = "HEAD"
+        commonRequestHeaders?.forEach {
+            request.setValue($0.1, forHTTPHeaderField: $0.0)
+        }
         session.dataTask(with: request as URLRequest) { _, response, error in
             if let error = error {
                 callback(nil, error)
@@ -135,7 +140,13 @@ public class Downloader {
     private func download(_ item: Item, _ callback: @escaping (Error?) -> ()) {
         currentItem = item
         currentCallback = callback
-        session.downloadTask(with: item.url).resume()
+        
+        let request = NSMutableURLRequest(url: item.url)
+        commonRequestHeaders?.forEach {
+            request.setValue($0.1, forHTTPHeaderField: $0.0)
+        }
+        
+        session.downloadTask(with: request as URLRequest).resume()
     }
     
     private func makeProgress(bytesDownloaded: Int64) {
