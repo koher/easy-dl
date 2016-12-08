@@ -102,7 +102,7 @@ public class Downloader {
         if let ifModifiedSince = item.ifModifiedSince {
             request.setValue(ifModifiedSince, forHTTPHeaderField: "If-Modified-Since")
         }
-        session.dataTask(with: request as URLRequest) { _, response, error in
+        let task = session.dataTask(with: request as URLRequest) { _, response, error in
             if self.canceled {
                 callback(.canceled)
                 return
@@ -130,7 +130,9 @@ public class Downloader {
             }
             
             callback(.success(contentLength, [false]))
-        }.resume()
+        }
+        currentTask = task
+        task.resume()
     }
     
     private func download(_ items: ArraySlice<(Item, Cached)>, _ callback: @escaping (Result) -> ()) {
@@ -169,7 +171,9 @@ public class Downloader {
             request.setValue(ifModifiedSince, forHTTPHeaderField: "If-Modified-Since")
         }
         
-        session.downloadTask(with: request as URLRequest).resume()
+        let task = session.downloadTask(with: request as URLRequest)
+        currentTask = task
+        task.resume()
     }
     
     private func makeProgress(bytesDownloaded: Int64, totalBytesDownloadedForItem: Int64, totalBytesExpectedToDownloadForItem: Int64?) {
@@ -260,8 +264,15 @@ public class Downloader {
         }
         
         func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+            let callback = downloader.currentCallback!
+
+            if downloader.canceled {
+                callback(.canceled)
+                return
+            }
+            
             if let error = error {
-                downloader.currentCallback!(.failure(error))
+                callback(.failure(error))
             }
         }
         

@@ -150,6 +150,10 @@ class SwiftDLTests: XCTestCase {
         
         let expectation = self.expectation(description: "")
         
+        downloader.handleProgress { bytesDownloaded, bytesExpectedToDownload in
+            print("\(bytesDownloaded) / \(bytesExpectedToDownload!)")
+        }
+
         downloader.handleCompletion { result in
             switch result {
             case .success:
@@ -163,7 +167,8 @@ class SwiftDLTests: XCTestCase {
         }
         
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+            print("cancel")
             downloader.cancel()
         }
         
