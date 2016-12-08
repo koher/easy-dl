@@ -6,13 +6,13 @@ import Foundation
 class SwiftDLTests: XCTestCase {
     func testExample() {
         let dir: String = Bundle(for: type(of: self)).resourcePath!
+        
+        let url1 = URL(string: "http://koherent.org/pi/pi10.txt")!
+        let url2 = URL(string: "http://koherent.org/pi/pi100.txt")!
         let file1 = (dir as NSString).appendingPathComponent("pi10.txt")
         let file2 = (dir as NSString).appendingPathComponent("pi100.txt")
         
-        let downloader = Downloader(items: [
-            (URL(string: "http://koherent.org/pi/pi10.txt")!, file1),
-            (URL(string: "http://koherent.org/pi/pi100.txt")!, file2),
-        ])
+        let downloader = Downloader(items: [(url1, file1), (url2, file2)], commonRequestHeaders: ["Accept-Encoding": "identity"])
         
         let expectation = self.expectation(description: "")
         
