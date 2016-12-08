@@ -4,15 +4,16 @@ public class Downloader {
     public let items: [Item]
     public let commonRequestHeaders: [String: String]?
     
-    private var progressHandlers: [(Int64, Int64?) -> ()] = []
+    private var progressHandlers: [(Int64, Int64?, Int, Int64, Int64?) -> ()] = []
     private var completionHandlers: [(Result) -> ()] = []
 
-    private var bytesDownloaded: Int64? = nil
+    private var bytesDownloaded: Int64! = nil
     private var bytesExpectedToDownload: Int64? = nil
     private var result: Result? = nil
     
     private var session: URLSession! = nil
 
+    private var currentItemIndex: Int = 0
     private var currentItem: Item! = nil
     private var currentCallback: ((Error?) -> ())? = nil
 
@@ -119,6 +120,8 @@ public class Downloader {
     }
     
     private func download(_ items: ArraySlice<Item>, _ callback: @escaping (Error?) -> ()) {
+        currentItemIndex = items.startIndex
+        
         guard let first = items.first else {
             callback(nil)
             return
@@ -149,10 +152,10 @@ public class Downloader {
         session.downloadTask(with: request as URLRequest).resume()
     }
     
-    private func makeProgress(bytesDownloaded: Int64) {
+    private func makeProgress(bytesDownloaded: Int64, totalBytesDownloadedForItem: Int64, totalBytesExpectedToDownloadForItem: Int64?) {
         self.bytesDownloaded! += bytesDownloaded
         progressHandlers.forEach {
-            $0(self.bytesDownloaded!, self.bytesExpectedToDownload)
+            $0(self.bytesDownloaded, self.bytesExpectedToDownload, self.currentItemIndex, totalBytesDownloadedForItem, totalBytesExpectedToDownloadForItem)
         }
     }
     
@@ -173,10 +176,10 @@ public class Downloader {
         // TODO
     }
     
-    public func handleProgress(_ handler: @escaping (Int64, Int64?) -> ()) {
+    public func handleProgress(_ handler: @escaping (Int64, Int64?, Int, Int64, Int64?) -> ()) {
         DispatchQueue.main.async { [weak self] in
-            if let bytesDownloaded = self?.bytesDownloaded {
-                handler(bytesDownloaded, self?.bytesExpectedToDownload)
+            if let zelf = self, let bytesDownloaded = zelf.bytesDownloaded {
+                handler(bytesDownloaded, zelf.bytesExpectedToDownload, zelf.items.count, 0, 0)
             }
             guard let zelf = self, zelf.result == nil else {
                 return
@@ -235,7 +238,12 @@ public class Downloader {
         }
         
         func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
-            downloader.makeProgress(bytesDownloaded: bytesWritten)
+            downloader.makeProgress(
+                bytesDownloaded: bytesWritten,
+                totalBytesDownloadedForItem: totalBytesWritten,
+                totalBytesExpectedToDownloadForItem: totalBytesExpectedToWrite == NSURLSessionTransferSizeUnknown
+                    ? nil : totalBytesExpectedToWrite
+            )
         }
     }
 }
