@@ -105,12 +105,8 @@ public class Downloader {
                 return
             }
             
-            guard let contentLengthString = response.allHeaderFields["Content-Length"] as? String else {
-                callback(nil, nil)
-                return
-            }
-            
-            guard let contentLength = Int64(contentLengthString) else {
+            let contentLength = response.expectedContentLength
+            guard contentLength != -1 else { // No `NSURLResponseUnknownLength` in Swift
                 callback(nil, nil)
                 return
             }
