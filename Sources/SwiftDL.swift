@@ -162,10 +162,12 @@ public class Downloader {
         
         self.result = result
         
-        session = nil
-        
         progressHandlers.removeAll()
         completionHandlers.removeAll()
+        
+        session = nil
+        // `self` is released by this if it is not retained outside
+        // because the `delegate` which retains `self` is released.
     }
     
     public func cancel() {
