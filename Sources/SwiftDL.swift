@@ -23,12 +23,10 @@ public class Downloader {
         
         session = URLSession(configuration: .default, delegate: Delegate(downloader: self), delegateQueue: .main)
         
-        let itemSlice = items[0..<items.count]
-        
-        func download() {
+        func download(_ items: [Item]) {
             self.bytesDownloaded = 0
             
-            self.download(itemSlice) { error in
+            self.download(items[0..<items.count]) { error in
                 if let error = error {
                     self.complete(with: .failure(error))
                     return
@@ -39,7 +37,7 @@ public class Downloader {
         }
 
         if needsPreciseProgress {
-            contentLength(of: itemSlice) { length, error in
+            contentLength(of: items[0..<items.count]) { length, error, itemsToDownload in
                 if let error = error {
                     self.complete(with: .failure(error))
                     return
@@ -47,71 +45,81 @@ public class Downloader {
                 
                 self.bytesExpectedToDownload = length
                 
-                download()
+                download(itemsToDownload)
             }
         } else {
-            download()
+            download(items)
         }
     }
     
-    private func contentLength(of items: ArraySlice<Item>, _ callback: @escaping (Int64?, Error?) -> ()) {
+    private func contentLength(of items: ArraySlice<Item>, _ callback: @escaping (Int64?, Error?, [Item]) -> ()) {
         guard let first = items.first else {
             DispatchQueue.main.async {
-                callback(0, nil)
+                callback(0, nil, [])
             }
             return
         }
         
-        contentLength(of: first) { length, error in
+        contentLength(of: first) { length, error, cached in
             if let error = error {
-                callback(nil, error)
+                callback(nil, error, [])
                 return
             }
             
+            let tail = items[(items.startIndex + 1)..<items.endIndex]
             guard let headLength = length else {
-                callback(nil, nil)
+                callback(nil, nil, Array(tail))
                 return
             }
             
-            self.contentLength(of: items[(items.startIndex + 1)..<items.endIndex]) { length, error in
+            self.contentLength(of: tail) { length, error, itemsToDownload in
                 if let error = error {
-                    callback(nil, error)
-                }
-                
-                guard let tailLength = length else {
-                    callback(nil, nil)
+                    callback(nil, error, [])
                     return
                 }
                 
-                callback(headLength + tailLength, nil)
+                guard let tailLength = length else {
+                    callback(nil, nil, [first] + itemsToDownload)
+                    return
+                }
+                
+                callback(headLength + tailLength, nil, cached ? itemsToDownload : [first] + itemsToDownload)
             }
         }
     }
     
-    private func contentLength(of item: Item, _ callback: @escaping (Int64?, Error?) -> ()) {
+    private func contentLength(of item: Item, _ callback: @escaping (Int64?, Error?, Bool) -> ()) {
         let request = NSMutableURLRequest(url: item.url)
         request.httpMethod = "HEAD"
         commonRequestHeaders?.forEach {
             request.setValue($0.1, forHTTPHeaderField: $0.0)
         }
+        if let ifModifiedSince = item.ifModifiedSince {
+            request.setValue(ifModifiedSince, forHTTPHeaderField: "If-Modified-Since")
+        }
         session.dataTask(with: request as URLRequest) { _, response, error in
             if let error = error {
-                callback(nil, error)
+                callback(nil, error, false)
                 return
             }
             
             guard let response = response as? HTTPURLResponse else {
-                callback(nil, nil)
+                callback(nil, nil, false)
+                return
+            }
+            
+            if response.statusCode == 304 {
+                callback(0, nil, true)
                 return
             }
             
             let contentLength = response.expectedContentLength
             guard contentLength != -1 else { // `-1` because no `NSURLResponseUnknownLength` in Swift
-                callback(nil, nil)
+                callback(nil, nil, false)
                 return
             }
             
-            callback(contentLength, nil)
+            callback(contentLength, nil, false)
         }.resume()
     }
     
@@ -143,6 +151,9 @@ public class Downloader {
         let request = NSMutableURLRequest(url: item.url)
         commonRequestHeaders?.forEach {
             request.setValue($0.1, forHTTPHeaderField: $0.0)
+        }
+        if let ifModifiedSince = item.ifModifiedSince {
+            request.setValue(ifModifiedSince, forHTTPHeaderField: "If-Modified-Since")
         }
         
         session.downloadTask(with: request as URLRequest).resume()
@@ -201,6 +212,14 @@ public class Downloader {
     public struct Item {
         public var url: URL
         public var destination: String
+        
+        internal var modificationDate: Date? {
+            return (try? FileManager.default.attributesOfItem(atPath: destination))?[FileAttributeKey.modificationDate] as? Date
+        }
+        
+        internal var ifModifiedSince: String? {
+            return modificationDate.map { Downloader.dateFormatter.string(from: $0) }
+        }
     }
     
     public enum Result {
@@ -224,11 +243,22 @@ public class Downloader {
         func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
             let item = downloader.currentItem!
             let callback = downloader.currentCallback!
+
+            let response = (downloadTask.response as? HTTPURLResponse)!
+            if response.statusCode == 304 {
+                callback(nil)
+                return
+            }
             
+            let fileManager = FileManager.default
+            try? fileManager.removeItem(atPath: item.destination) // OK though it fails if the file does not exists
             do {
-                let fileManager = FileManager.default
-                try? fileManager.removeItem(atPath: item.destination)
                 try fileManager.moveItem(at: location, to: URL(fileURLWithPath: item.destination))
+                if let lastModified = response.allHeaderFields["Last-Modified"] as? String {
+                    if let modificationDate = Downloader.dateFormatter.date(from: lastModified) {
+                        try fileManager.setAttributes([.modificationDate: modificationDate], ofItemAtPath: item.destination)
+                    }
+                }
                 callback(nil)
             } catch let error {
                 callback(error)
@@ -243,5 +273,13 @@ public class Downloader {
                     ? nil : totalBytesExpectedToWrite
             )
         }
+    }
+    
+    static internal var dateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE',' dd MMM yyyy HH':'mm':'ss 'GMT'"
+        formatter.locale = Locale(identifier: "en_US")
+        formatter.timeZone = TimeZone(abbreviation: "GMT")!
+        return formatter
     }
 }
