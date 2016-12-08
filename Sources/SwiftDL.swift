@@ -1,5 +1,7 @@
 import Foundation
 
+private typealias Cached = Bool
+
 public class Downloader {
     public let items: [Item]
     public let commonRequestHeaders: [String: String]?
@@ -15,7 +17,10 @@ public class Downloader {
 
     private var currentItemIndex: Int = 0
     private var currentItem: Item! = nil
-    private var currentCallback: ((Error?) -> ())? = nil
+    private var currentCallback: ((Result) -> ())? = nil
+    private var currentTask: URLSessionTask? = nil
+    
+    private var canceled: Bool = false
 
     public init(items: [Item], needsPreciseProgress: Bool = true, commonRequestHeaders: [String: String]? = nil) {
         self.items = items
@@ -23,72 +28,72 @@ public class Downloader {
         
         session = URLSession(configuration: .default, delegate: Delegate(downloader: self), delegateQueue: .main)
         
-        func download(_ items: [Item]) {
+        func download(_ cached: [Cached]) {
             self.bytesDownloaded = 0
             
-            self.download(items[0..<items.count]) { error in
-                if let error = error {
-                    self.complete(with: .failure(error))
-                    return
-                }
-                
-                self.complete(with: .success)
-            }
+            assert(items.count == cached.count) // Always true for `Downloader` without bugs
+            self.download(ArraySlice(zip(items, cached)), self.complete(with:))
         }
 
         if needsPreciseProgress {
-            contentLength(of: items[0..<items.count]) { length, error, itemsToDownload in
-                if let error = error {
+            contentLength(of: items[0..<items.count]) { result in
+                switch result {
+                case .canceled:
+                    self.complete(with: .canceled)
+                case let .failure(error):
                     self.complete(with: .failure(error))
-                    return
+                case let .success(length, cached):
+                    self.bytesExpectedToDownload = length
+                    download(cached)
                 }
-                
-                self.bytesExpectedToDownload = length
-                
-                download(itemsToDownload)
             }
         } else {
-            download(items)
+            download([Cached](repeating: false, count: items.count))
         }
     }
     
-    private func contentLength(of items: ArraySlice<Item>, _ callback: @escaping (Int64?, Error?, [Item]) -> ()) {
+    private func contentLength(of items: ArraySlice<Item>, _ callback: @escaping (ContentLengthResult) -> ()) {
         guard let first = items.first else {
             DispatchQueue.main.async {
-                callback(0, nil, [])
+                callback(.success(0, []))
             }
             return
         }
         
-        contentLength(of: first) { length, error, cached in
-            if let error = error {
-                callback(nil, error, [])
-                return
-            }
-            
-            let tail = items[(items.startIndex + 1)..<items.endIndex]
-            guard let headLength = length else {
-                callback(nil, nil, Array(tail))
-                return
-            }
-            
-            self.contentLength(of: tail) { length, error, itemsToDownload in
-                if let error = error {
-                    callback(nil, error, [])
-                    return
+        contentLength(of: first) { result in
+            switch result {
+            case .canceled, .failure:
+                callback(result)
+            case let .success(headLength, headCached):
+                let tail = items[(items.startIndex + 1)..<items.endIndex]
+                guard let headLength = headLength else {
+                    callback(.success(nil, headCached + [Cached](repeating: false, count: items.count - 1)))
+                    break
                 }
                 
-                guard let tailLength = length else {
-                    callback(nil, nil, [first] + itemsToDownload)
-                    return
+                self.contentLength(of: tail) { result in
+                    switch result {
+                    case .canceled, .failure:
+                        callback(result)
+                    case let .success(tailLength, tailCached):
+                        guard let tailLength = tailLength else {
+                            callback(.success(nil, headCached + tailCached))
+                            break
+                        }
+                        
+                        callback(.success(headLength + tailLength, headCached + tailCached))
+                    }
                 }
-                
-                callback(headLength + tailLength, nil, cached ? itemsToDownload : [first] + itemsToDownload)
             }
         }
     }
     
-    private func contentLength(of item: Item, _ callback: @escaping (Int64?, Error?, Bool) -> ()) {
+    private func contentLength(of item: Item, _ callback: @escaping (ContentLengthResult) -> ()) {
+        guard !canceled else {
+            callback(.canceled)
+            return
+        }
+        
         let request = NSMutableURLRequest(url: item.url)
         request.httpMethod = "HEAD"
         commonRequestHeaders?.forEach {
@@ -98,53 +103,61 @@ public class Downloader {
             request.setValue(ifModifiedSince, forHTTPHeaderField: "If-Modified-Since")
         }
         session.dataTask(with: request as URLRequest) { _, response, error in
+            if self.canceled {
+                callback(.canceled)
+                return
+            }
+            
             if let error = error {
-                callback(nil, error, false)
+                callback(.failure(error))
                 return
             }
             
             guard let response = response as? HTTPURLResponse else {
-                callback(nil, nil, false)
+                callback(.success(nil, [false]))
                 return
             }
             
             if response.statusCode == 304 {
-                callback(0, nil, true)
+                callback(.success(0, [true]))
                 return
             }
             
             let contentLength = response.expectedContentLength
             guard contentLength != -1 else { // `-1` because no `NSURLResponseUnknownLength` in Swift
-                callback(nil, nil, false)
+                callback(.success(nil, [false]))
                 return
             }
             
-            callback(contentLength, nil, false)
+            callback(.success(contentLength, [false]))
         }.resume()
     }
     
-    private func download(_ items: ArraySlice<Item>, _ callback: @escaping (Error?) -> ()) {
+    private func download(_ items: ArraySlice<(Item, Cached)>, _ callback: @escaping (Result) -> ()) {
         currentItemIndex = items.startIndex
         
         guard let first = items.first else {
-            callback(nil)
+            callback(.success)
             return
         }
         
-        download(first) { error in
-            if let error = error {
-                callback(error)
-                return
-            }
-            
-            self.download(items[(items.startIndex + 1)..<items.endIndex]) { error in
-                callback(error)
-                return
+        let (item, cached) = first
+        download(item, cached) { result in
+            switch result {
+            case .canceled, .failure:
+                callback(result)
+            case .success:
+                self.download(items[(items.startIndex + 1)..<items.endIndex], callback)
             }
         }
     }
     
-    private func download(_ item: Item, _ callback: @escaping (Error?) -> ()) {
+    private func download(_ item: Item, _ cached: Cached, _ callback: @escaping (Result) -> ()) {
+        guard !canceled else {
+            callback(.canceled)
+            return
+        }
+        
         currentItem = item
         currentCallback = callback
         
@@ -182,7 +195,12 @@ public class Downloader {
     }
     
     public func cancel() {
-        // TODO
+        DispatchQueue.main.async {
+            guard !self.canceled else { return }
+            
+            self.canceled = true
+            self.currentTask?.cancel()
+        }
     }
     
     public func handleProgress(_ handler: @escaping (Int64, Int64?, Int, Int64, Int64?) -> ()) {
@@ -224,6 +242,13 @@ public class Downloader {
     
     public enum Result {
         case success
+        case canceled
+        case failure(Error)
+    }
+    
+    private enum ContentLengthResult {
+        case success(Int64?, [Cached])
+        case canceled
         case failure(Error)
     }
     
@@ -236,7 +261,7 @@ public class Downloader {
         
         func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
             if let error = error {
-                downloader.currentCallback!(error)
+                downloader.currentCallback!(.failure(error))
             }
         }
         
@@ -246,7 +271,7 @@ public class Downloader {
 
             let response = (downloadTask.response as? HTTPURLResponse)!
             if response.statusCode == 304 {
-                callback(nil)
+                callback(.success)
                 return
             }
             
@@ -259,9 +284,9 @@ public class Downloader {
                         try fileManager.setAttributes([.modificationDate: modificationDate], ofItemAtPath: item.destination)
                     }
                 }
-                callback(nil)
+                callback(.success)
             } catch let error {
-                callback(error)
+                callback(.failure(error))
             }
         }
         
