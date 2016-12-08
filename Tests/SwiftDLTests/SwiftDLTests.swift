@@ -46,6 +46,9 @@ class SwiftDLTests: XCTestCase {
         
         XCTAssertTrue(progressSet.contains("11 / 112"))
         XCTAssertTrue(progressSet.contains("112 / 112"))
+        
+        try? fileManager.removeItem(at: URL(fileURLWithPath: file1))
+        try? fileManager.removeItem(at: URL(fileURLWithPath: file2))
     }
     
     func testProgress() {
@@ -125,6 +128,10 @@ class SwiftDLTests: XCTestCase {
                 fatalError("Never reaches here.")
             }
         }
+        
+        try? fileManager.removeItem(at: URL(fileURLWithPath: file1))
+        try? fileManager.removeItem(at: URL(fileURLWithPath: file2))
+        try? fileManager.removeItem(at: URL(fileURLWithPath: file3))
     }
     
     func testCancel() {
@@ -161,6 +168,9 @@ class SwiftDLTests: XCTestCase {
         }
         
         waitForExpectations(timeout: 20.0, handler: nil)
+        
+        try? fileManager.removeItem(at: URL(fileURLWithPath: file1))
+        try? fileManager.removeItem(at: URL(fileURLWithPath: file2))
     }
 
     static var allTests : [(String, (SwiftDLTests) -> () throws -> Void)] {
