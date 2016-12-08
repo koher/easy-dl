@@ -168,6 +168,7 @@ class SwiftDLTests: XCTestCase {
             ("testExample", testExample),
             ("testProgress", testProgress),
             ("testCompletion", testCompletion),
+            ("testCache", testCache),
             ("testCancel", testCancel),
         ]
     }
