@@ -167,7 +167,7 @@ class SwiftDLTests: XCTestCase {
         }
         
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             print("cancel")
             downloader.cancel()
         }
