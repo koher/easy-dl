@@ -74,13 +74,15 @@ class EasyDLTests: XCTestCase {
         try? fileManager.removeItem(at: URL(fileURLWithPath: file2))
         try? fileManager.removeItem(at: URL(fileURLWithPath: file3))
         
-        for count in 0..<3 {
+        for count in 0..<4 {
             let downloader: Downloader
             switch count {
             case 0, 1:
                 downloader = Downloader(items: [(url1, file1), (url2, file2)], commonRequestHeaders: ["Accept-Encoding": "identity"])
             case 2:
                 downloader = Downloader(items: [(url2, file2), (url3, file3)], commonRequestHeaders: ["Accept-Encoding": "identity"])
+            case 3:
+                downloader = Downloader(items: [(url1, file1), (url2, file2)], commonStrategy: .always, commonRequestHeaders: ["Accept-Encoding": "identity"])
             default:
                 fatalError("Never reaches here.")
             }
@@ -124,6 +126,9 @@ class EasyDLTests: XCTestCase {
                 XCTAssertTrue(progressSet.isEmpty)
             case 2:
                 XCTAssertTrue(progressSet.contains("1001 / 1001"))
+            case 3:
+                XCTAssertTrue(progressSet.contains("11 / 112"))
+                XCTAssertTrue(progressSet.contains("112 / 112"))
             default:
                 fatalError("Never reaches here.")
             }

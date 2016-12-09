@@ -1,8 +1,18 @@
 import Foundation
 
 extension Downloader {
-    public convenience init(items: [(URL, String)], needsPreciseProgress: Bool = true, commonRequestHeaders: [String: String]? = nil) {
-        self.init(items: items.map { Item(url: $0.0, destination: $0.1) }, needsPreciseProgress: needsPreciseProgress, commonRequestHeaders: commonRequestHeaders)
+    public convenience init(
+        items: [(URL, String)],
+        needsPreciseProgress: Bool = true,
+        commonStrategy: Strategy = .ifUpdated,
+        commonRequestHeaders: [String: String]? = nil
+    ) {
+        self.init(
+            items: items.map { Item(url: $0.0, destination: $0.1) },
+            needsPreciseProgress: needsPreciseProgress,
+            commonStrategy: commonStrategy,
+            commonRequestHeaders: commonRequestHeaders
+        )
     }
 
     public func handleProgress(_ handler: @escaping (Int64, Int64?) -> ()) {

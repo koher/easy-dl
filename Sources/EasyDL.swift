@@ -4,6 +4,7 @@ private typealias Cached = Bool
 
 public class Downloader {
     public let items: [Item]
+    public let commonStrategy: Strategy
     public let commonRequestHeaders: [String: String]?
     
     private var progressHandlers: [(Int64, Int64?, Int, Int64, Int64?) -> ()] = []
@@ -22,8 +23,14 @@ public class Downloader {
     
     private var canceled: Bool = false
 
-    public init(items: [Item], needsPreciseProgress: Bool = true, commonRequestHeaders: [String: String]? = nil) {
+    public init(
+        items: [Item],
+        needsPreciseProgress: Bool = true,
+        commonStrategy: Strategy = .ifUpdated,
+        commonRequestHeaders: [String: String]? = nil
+    ) {
         self.items = items
+        self.commonStrategy = commonStrategy
         self.commonRequestHeaders = commonRequestHeaders
         
         session = URLSession(configuration: .default, delegate: Delegate(downloader: self), delegateQueue: .main)
@@ -99,8 +106,16 @@ public class Downloader {
         commonRequestHeaders?.forEach {
             request.setValue($0.1, forHTTPHeaderField: $0.0)
         }
-        if let ifModifiedSince = item.ifModifiedSince {
-            request.setValue(ifModifiedSince, forHTTPHeaderField: "If-Modified-Since")
+        switch item.strategy ?? commonStrategy {
+        case .always:
+            break
+        case .ifUpdated:
+            if let ifModifiedSince = item.ifModifiedSince {
+                request.setValue(ifModifiedSince, forHTTPHeaderField: "If-Modified-Since")
+            }
+        case .ifNotCached:
+            callback(.success(0, [true]))
+            return
         }
         let task = session.dataTask(with: request as URLRequest) { _, response, error in
             if self.canceled {
@@ -167,8 +182,16 @@ public class Downloader {
         commonRequestHeaders?.forEach {
             request.setValue($0.1, forHTTPHeaderField: $0.0)
         }
-        if let ifModifiedSince = item.ifModifiedSince {
-            request.setValue(ifModifiedSince, forHTTPHeaderField: "If-Modified-Since")
+        switch item.strategy ?? commonStrategy {
+        case .always:
+            break
+        case .ifUpdated:
+            if let ifModifiedSince = item.ifModifiedSince {
+                request.setValue(ifModifiedSince, forHTTPHeaderField: "If-Modified-Since")
+            }
+        case .ifNotCached:
+            callback(.success)
+            return
         }
         
         let task = session.downloadTask(with: request as URLRequest)
@@ -231,9 +254,20 @@ public class Downloader {
         }
     }
     
+    public enum Strategy {
+        case always, ifUpdated, ifNotCached
+    }
+    
     public struct Item {
         public var url: URL
         public var destination: String
+        public var strategy: Strategy?
+        
+        public init(url: URL, destination: String, strategy: Strategy? = nil) {
+            self.url = url
+            self.destination = destination
+            self.strategy = strategy
+        }
         
         internal var modificationDate: Date? {
             return (try? FileManager.default.attributesOfItem(atPath: destination))?[FileAttributeKey.modificationDate] as? Date
@@ -241,6 +275,10 @@ public class Downloader {
         
         internal var ifModifiedSince: String? {
             return modificationDate.map { Downloader.dateFormatter.string(from: $0) }
+        }
+        
+        internal var fileExists: Bool {
+            return FileManager.default.fileExists(atPath: destination)
         }
     }
     
