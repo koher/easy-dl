@@ -13,8 +13,8 @@ downloader.completion { result in
     switch result {
     case .success:
         let data1 = try! Data(contentsOf: URL(fileURLWithPath: file1))
-        
         let data2 = try! Data(contentsOf: URL(fileURLWithPath: file2))
+        ...
     case .cancel:
         ...
     case let .failure(error):
@@ -34,7 +34,7 @@ enum Strategy {
 ```
 
 ```swift
-let item1 = Item(url: url1, destination: file1) // `.ifUpdated` is a default value 
+let item1 = Item(url: url1, destination: file1) // `.ifUpdated` is a default strategy
 let item2 = Item(url: url2, destination: file2, strategy: .always)
 let item3 = Item(url: url3, destination: file3, strategy: .ifNotCached)
 
