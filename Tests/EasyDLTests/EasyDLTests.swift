@@ -1,9 +1,9 @@
 import XCTest
-@testable import SwiftDL
+@testable import EasyDL
 
 import Foundation
 
-class SwiftDLTests: XCTestCase {
+class EasyDLTests: XCTestCase {
     func testExample() {
         let dir: String = Bundle(for: type(of: self)).resourcePath!
         
@@ -178,7 +178,7 @@ class SwiftDLTests: XCTestCase {
         try? fileManager.removeItem(at: URL(fileURLWithPath: file2))
     }
 
-    static var allTests : [(String, (SwiftDLTests) -> () throws -> Void)] {
+    static var allTests : [(String, (EasyDLTests) -> () throws -> Void)] {
         return [
             ("testExample", testExample),
             ("testProgress", testProgress),
