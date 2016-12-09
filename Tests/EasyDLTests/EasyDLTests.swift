@@ -51,14 +51,6 @@ class EasyDLTests: XCTestCase {
         try? fileManager.removeItem(at: URL(fileURLWithPath: file2))
     }
     
-    func testProgress() {
-        // TODO
-    }
-    
-    func testCompletion() {
-        // TODO
-    }
-    
     func testCache() {
         let dir: String = Bundle(for: type(of: self)).resourcePath!
         
@@ -201,7 +193,6 @@ class EasyDLTests: XCTestCase {
         return [
             ("testExample", testExample),
             ("testProgress", testProgress),
-            ("testCompletion", testCompletion),
             ("testCache", testCache),
             ("testCancel", testCancel),
         ]
