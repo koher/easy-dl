@@ -15,19 +15,19 @@ extension Downloader {
         )
     }
 
-    public func handleProgress(_ handler: @escaping (Int64, Int64?) -> ()) {
-        handleProgress { done, whole, _, _, _ in
+    public func progress(_ handler: @escaping (Int64, Int64?) -> ()) {
+        progress { done, whole, _, _, _ in
             handler(done, whole)
         }
     }
     
-    public func handleProgress(_ handler: @escaping (Float?) -> ()) {
+    public func progress(_ handler: @escaping (Float?) -> ()) {
         if needsPreciseProgress {
-            handleProgress { done, whole in
+            progress { done, whole in
                 handler(whole.map { whole in Float(Double(done) / Double(whole)) })
             }
         } else {
-            handleProgress { _, _, itemIndex, done, whole in
+            progress { _, _, itemIndex, done, whole in
                 handler(whole.map { whole in (Float(itemIndex) + Float(Double(done) / Double(whole))) / Float(self.items.count) })
             }
         }
