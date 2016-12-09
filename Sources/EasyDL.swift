@@ -48,7 +48,7 @@ public class Downloader {
             contentLength(of: items[0..<items.count]) { result in
                 switch result {
                 case .canceled:
-                    self.complete(with: .canceled)
+                    self.complete(with: .cancel)
                 case let .failure(error):
                     self.complete(with: .failure(error))
                 case let .success(length, cached):
@@ -163,7 +163,7 @@ public class Downloader {
         let (item, cached) = first
         download(item, cached) { result in
             switch result {
-            case .canceled, .failure:
+            case .cancel, .failure:
                 callback(result)
             case .success:
                 self.download(items[(items.startIndex + 1)..<items.endIndex], callback)
@@ -173,7 +173,7 @@ public class Downloader {
     
     private func download(_ item: Item, _ cached: Cached, _ callback: @escaping (Result) -> ()) {
         guard !canceled else {
-            callback(.canceled)
+            callback(.cancel)
             return
         }
         
@@ -295,7 +295,7 @@ public class Downloader {
     
     public enum Result {
         case success
-        case canceled
+        case cancel
         case failure(Error)
     }
     
@@ -316,7 +316,7 @@ public class Downloader {
             let callback = downloader.currentCallback!
 
             if downloader.canceled {
-                callback(.canceled)
+                callback(.cancel)
                 return
             }
             
