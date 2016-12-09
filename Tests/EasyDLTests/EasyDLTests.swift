@@ -51,6 +51,53 @@ class EasyDLTests: XCTestCase {
         try? fileManager.removeItem(at: URL(fileURLWithPath: file2))
     }
     
+    func testProgress() {
+        let dir: String = Bundle(for: type(of: self)).resourcePath!
+        
+        let url1 = URL(string: "http://koherent.org/pi/pi10.txt")!
+        let url2 = URL(string: "http://koherent.org/pi/pi100.txt")!
+        let file1 = (dir as NSString).appendingPathComponent("pi10.txt")
+        let file2 = (dir as NSString).appendingPathComponent("pi100.txt")
+        
+        let fileManager = FileManager.default
+        try? fileManager.removeItem(at: URL(fileURLWithPath: file1))
+        try? fileManager.removeItem(at: URL(fileURLWithPath: file2))
+        
+        let downloader = Downloader(items: [(url1, file1), (url2, file2)], needsPreciseProgress: false)
+        
+        let expectation = self.expectation(description: "")
+        
+        var progressSet: Set<String> = []
+        downloader.handleProgress { (rate: Float?) in
+            print("\(rate!) / 1.0")
+            progressSet.insert("\(rate!) / 1.0")
+        }
+        
+        downloader.handleCompletion { result in
+            switch result {
+            case .success:
+                let data1 = try! Data(contentsOf: URL(fileURLWithPath: file1))
+                XCTAssertEqual(String(bytes: data1, encoding: .utf8), "3.141592653")
+                
+                let data2 = try! Data(contentsOf: URL(fileURLWithPath: file2))
+                XCTAssertEqual(String(bytes: data2, encoding: .utf8), "3.141592653589793238462643383279502884197169399375105820974944592307816406286208998628034825342117067")
+            case .canceled:
+                XCTFail()
+            case let .failure(error):
+                XCTFail("\(error)")
+            }
+            expectation.fulfill()
+        }
+        
+        waitForExpectations(timeout: 20.0, handler: nil)
+        
+        XCTAssertTrue(progressSet.contains("0.5 / 1.0"))
+        XCTAssertTrue(progressSet.contains("1.0 / 1.0"))
+        
+        try? fileManager.removeItem(at: URL(fileURLWithPath: file1))
+        try? fileManager.removeItem(at: URL(fileURLWithPath: file2))
+    }
+    
     func testCache() {
         let dir: String = Bundle(for: type(of: self)).resourcePath!
         

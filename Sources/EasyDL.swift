@@ -4,6 +4,7 @@ private typealias Cached = Bool
 
 public class Downloader {
     public let items: [Item]
+    public let needsPreciseProgress: Bool
     public let commonStrategy: Strategy
     public let commonRequestHeaders: [String: String]?
     
@@ -12,6 +13,8 @@ public class Downloader {
 
     private var bytesDownloaded: Int64! = nil
     private var bytesExpectedToDownload: Int64? = nil
+    private var bytesDownloadedForItem: Int64! = nil
+    private var bytesExpectedToDownloadForItem: Int64? = nil
     private var result: Result? = nil
     
     private var session: URLSession! = nil
@@ -30,14 +33,13 @@ public class Downloader {
         commonRequestHeaders: [String: String]? = nil
     ) {
         self.items = items
+        self.needsPreciseProgress = needsPreciseProgress
         self.commonStrategy = commonStrategy
         self.commonRequestHeaders = commonRequestHeaders
         
         session = URLSession(configuration: .default, delegate: Delegate(downloader: self), delegateQueue: .main)
         
         func download(_ cached: [Cached]) {
-            self.bytesDownloaded = 0
-            
             assert(items.count == cached.count) // Always true for `Downloader` without bugs
             self.download(ArraySlice(zip(items, cached)), self.complete(with:))
         }
@@ -205,7 +207,11 @@ public class Downloader {
     }
     
     private func makeProgress(bytesDownloaded: Int64, totalBytesDownloadedForItem: Int64, totalBytesExpectedToDownloadForItem: Int64?) {
-        self.bytesDownloaded! += bytesDownloaded
+        if let _ = self.bytesDownloaded {
+            self.bytesDownloaded! += bytesDownloaded
+        } else {
+            self.bytesDownloaded = bytesDownloaded
+        }
         progressHandlers.forEach {
             $0(self.bytesDownloaded, self.bytesExpectedToDownload, self.currentItemIndex, totalBytesDownloadedForItem, totalBytesExpectedToDownloadForItem)
         }
@@ -238,7 +244,7 @@ public class Downloader {
     public func handleProgress(_ handler: @escaping (Int64, Int64?, Int, Int64, Int64?) -> ()) {
         DispatchQueue.main.async { [weak self] in
             if let zelf = self, let bytesDownloaded = zelf.bytesDownloaded {
-                handler(bytesDownloaded, zelf.bytesExpectedToDownload, zelf.items.count, 0, 0)
+                handler(bytesDownloaded, zelf.bytesExpectedToDownload, zelf.items.count, zelf.bytesDownloadedForItem, zelf.bytesExpectedToDownloadForItem)
             }
             guard let zelf = self, zelf.result == nil else {
                 return
@@ -345,6 +351,8 @@ public class Downloader {
         }
         
         func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
+            downloader.bytesDownloadedForItem = totalBytesWritten
+            downloader.bytesExpectedToDownloadForItem = totalBytesExpectedToWrite
             downloader.makeProgress(
                 bytesDownloaded: bytesWritten,
                 totalBytesDownloadedForItem: totalBytesWritten,

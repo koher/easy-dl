@@ -22,8 +22,14 @@ extension Downloader {
     }
     
     public func handleProgress(_ handler: @escaping (Float?) -> ()) {
-        handleProgress { done, whole in
-            handler(whole.map { whole in Float(Double(done) / Double(whole)) })
+        if needsPreciseProgress {
+            handleProgress { done, whole in
+                handler(whole.map { whole in Float(Double(done) / Double(whole)) })
+            }
+        } else {
+            handleProgress { _, _, itemIndex, done, whole in
+                handler(whole.map { whole in (Float(itemIndex) + Float(Double(done) / Double(whole))) / Float(self.items.count) })
+            }
         }
     }
 }
