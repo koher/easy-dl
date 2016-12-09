@@ -241,7 +241,7 @@ public class Downloader {
         }
     }
     
-    public func handleProgress(_ handler: @escaping (Int64, Int64?, Int, Int64, Int64?) -> ()) {
+    public func progress(_ handler: @escaping (Int64, Int64?, Int, Int64, Int64?) -> ()) {
         DispatchQueue.main.async { [weak self] in
             if let zelf = self, let bytesDownloaded = zelf.bytesDownloaded {
                 handler(bytesDownloaded, zelf.bytesExpectedToDownload, zelf.items.count, zelf.bytesDownloadedForItem, zelf.bytesExpectedToDownloadForItem)
@@ -254,7 +254,7 @@ public class Downloader {
         }
     }
     
-    public func handleCompletion(_ handler: @escaping (Result) -> ()) {
+    public func completion(_ handler: @escaping (Result) -> ()) {
         DispatchQueue.main.async {
             if let result = self.result {
                 handler(result)

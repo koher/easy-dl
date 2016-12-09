@@ -21,12 +21,12 @@ class EasyDLTests: XCTestCase {
         /**/ let expectation = self.expectation(description: "")
         
         /**/ var progressSet: Set<String> = []
-        downloader.handleProgress { bytesDownloaded, bytesExpectedToDownload in
+        downloader.progress { bytesDownloaded, bytesExpectedToDownload in
             print("\(bytesDownloaded) / \(bytesExpectedToDownload!)")
             /**/ progressSet.insert("\(bytesDownloaded) / \(bytesExpectedToDownload!)")
         }
         
-        downloader.handleCompletion { result in
+        downloader.completion { result in
             switch result {
             case .success:
                 let data1 = try! Data(contentsOf: URL(fileURLWithPath: file1))
@@ -68,12 +68,12 @@ class EasyDLTests: XCTestCase {
         let expectation = self.expectation(description: "")
         
         var progressSet: Set<String> = []
-        downloader.handleProgress { (rate: Float?) in
+        downloader.progress { (rate: Float?) in
             print("\(rate!) / 1.0")
             progressSet.insert("\(rate!) / 1.0")
         }
         
-        downloader.handleCompletion { result in
+        downloader.completion { result in
             switch result {
             case .success:
                 let data1 = try! Data(contentsOf: URL(fileURLWithPath: file1))
@@ -141,12 +141,12 @@ class EasyDLTests: XCTestCase {
             let expectation = self.expectation(description: "")
             
             var progressSet: Set<String> = []
-            downloader.handleProgress { bytesDownloaded, bytesExpectedToDownload in
+            downloader.progress { bytesDownloaded, bytesExpectedToDownload in
                 print("\(bytesDownloaded) / \(bytesExpectedToDownload!)")
                 progressSet.insert("\(bytesDownloaded) / \(bytesExpectedToDownload!)")
             }
             
-            downloader.handleCompletion { result in
+            downloader.completion { result in
                 switch result {
                 case .success:
                     let data1 = try! Data(contentsOf: URL(fileURLWithPath: file1))
@@ -210,11 +210,11 @@ class EasyDLTests: XCTestCase {
         
         let expectation = self.expectation(description: "")
         
-        downloader.handleProgress { bytesDownloaded, bytesExpectedToDownload in
+        downloader.progress { bytesDownloaded, bytesExpectedToDownload in
             print("\(bytesDownloaded) / \(bytesExpectedToDownload!)")
         }
 
-        downloader.handleCompletion { result in
+        downloader.completion { result in
             switch result {
             case .success:
                 XCTFail()
