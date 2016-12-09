@@ -124,14 +124,16 @@ class EasyDLTests: XCTestCase {
                 downloader = Downloader(items: [(url1, file1), (url2, file2)], commonStrategy: .always, commonRequestHeaders: ["Accept-Encoding": "identity"])
             case 4:
                 typealias Item = Downloader.Item
-                downloader = Downloader(items: [Item(url: url1, destination: file1, strategy: .always), Item(url: url3, destination: file3)], commonRequestHeaders: ["Accept-Encoding": "identity"])
+                let item1 = Item(url: url1, destination: file1)
+                let item2 = Item(url: url2, destination: file2, strategy: .always)
+                downloader = Downloader(items: [item1, item2], commonRequestHeaders: ["Accept-Encoding": "identity"])
             case 5:
                 typealias Item = Downloader.Item
                 let item1 = Item(url: url1, destination: file1)
-                let item2 = Item(url: url2, destination: file2, strategy: .ifNotCached)
+                let item3 = Item(url: url3, destination: file3, strategy: .ifNotCached)
                 try! fileManager.setAttributes([.modificationDate: item1.modificationDate! - 1], ofItemAtPath: item1.destination)
-                try! fileManager.setAttributes([.modificationDate: item2.modificationDate! - 1], ofItemAtPath: item2.destination)
-                downloader = Downloader(items: [item1, item2], commonRequestHeaders: ["Accept-Encoding": "identity"])
+                try! fileManager.setAttributes([.modificationDate: item3.modificationDate! - 1], ofItemAtPath: item3.destination)
+                downloader = Downloader(items: [item1, item3], commonRequestHeaders: ["Accept-Encoding": "identity"])
             default:
                 fatalError("Never reaches here.")
             }
@@ -179,7 +181,7 @@ class EasyDLTests: XCTestCase {
                 XCTAssertTrue(progressSet.contains("11 / 112"))
                 XCTAssertTrue(progressSet.contains("112 / 112"))
             case 4:
-                XCTAssertTrue(progressSet.contains("11 / 11"))
+                XCTAssertTrue(progressSet.contains("101 / 101"))
             case 5:
                 XCTAssertTrue(progressSet.contains("11 / 11"))
             default:
