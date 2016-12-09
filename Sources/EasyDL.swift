@@ -175,6 +175,11 @@ public class Downloader {
             return
         }
         
+        guard !cached else {
+            callback(.success)
+            return
+        }
+        
         currentItem = item
         currentCallback = callback
         
