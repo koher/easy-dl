@@ -15,7 +15,7 @@ downloader.completion { result in
         let data1 = try! Data(contentsOf: URL(fileURLWithPath: file1))
         
         let data2 = try! Data(contentsOf: URL(fileURLWithPath: file2))
-    case .canceled:
+    case .cancel:
         ...
     case let .failure(error):
         ...
