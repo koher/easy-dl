@@ -227,6 +227,7 @@ public class Downloader {
         progressHandlers.removeAll()
         completionHandlers.removeAll()
         
+        session.finishTasksAndInvalidate()
         session = nil
         // `self` is released by this if it is not retained outside
         // because the `delegate` which retains `self` is released.
