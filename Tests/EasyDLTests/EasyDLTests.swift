@@ -238,12 +238,52 @@ class EasyDLTests: XCTestCase {
         try? fileManager.removeItem(at: URL(fileURLWithPath: file2))
     }
 
+    func testFailure() {
+        let dir: String = Bundle(for: type(of: self)).resourcePath!
+        
+        let url1 = URL(string: "http://koherent.org/pi/not-found.txt")!
+        let url2 = URL(string: "http://koherent.org/pi/pi100.txt")!
+        let file1 = (dir as NSString).appendingPathComponent("pi10.txt")
+        let file2 = (dir as NSString).appendingPathComponent("pi100.txt")
+        
+        let fileManager = FileManager.default
+        try? fileManager.removeItem(at: URL(fileURLWithPath: file1))
+        try? fileManager.removeItem(at: URL(fileURLWithPath: file2))
+        
+        let downloader = Downloader(items: [(url1, file1), (url2, file2)])
+        
+        let expectation = self.expectation(description: "")
+        
+        downloader.completion { result in
+            switch result {
+            case .success:
+                XCTFail()
+            case .cancel:
+                XCTFail()
+            case let .failure(error):
+                switch error {
+                case let error as Downloader.ResponseError:
+                    XCTAssertEqual((error.response as! HTTPURLResponse).statusCode, 404)
+                default:
+                    XCTFail()
+                }
+            }
+            expectation.fulfill()
+        }
+        
+        waitForExpectations(timeout: 20.0, handler: nil)
+        
+        try? fileManager.removeItem(at: URL(fileURLWithPath: file1))
+        try? fileManager.removeItem(at: URL(fileURLWithPath: file2))
+    }
+
     static var allTests : [(String, (EasyDLTests) -> () throws -> Void)] {
         return [
             ("testExample", testExample),
             ("testProgress", testProgress),
             ("testCache", testCache),
             ("testCancel", testCancel),
+            ("testFailure", testFailure),
         ]
     }
 }
