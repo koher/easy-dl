@@ -300,6 +300,10 @@ public class Downloader {
         case failure(Error)
     }
     
+    public struct ResponseError: Error {
+        let response: URLResponse
+    }
+    
     private enum ContentLengthResult {
         case success(Int64?, [Cached])
         case canceled
@@ -333,6 +337,10 @@ public class Downloader {
             let response = (downloadTask.response as? HTTPURLResponse)!
             if response.statusCode == 304 {
                 callback(.success)
+                return
+            }
+            guard response.statusCode == 200 else {
+                callback(.failure(ResponseError(response: response)))
                 return
             }
             
