@@ -3,10 +3,10 @@ import XCTest
 
 import Foundation
 
+private let dir: String = #file.deletingLastPathComponent.deletingLastPathComponent
+
 class EasyDLTests: XCTestCase {
     func testExample() {
-        /**/ let dir: String = Bundle(for: type(of: self)).resourcePath!
-        
         /**/ let url1 = URL(string: "http://koherent.org/pi/pi10.txt")!
         /**/ let url2 = URL(string: "http://koherent.org/pi/pi100.txt")!
         /**/ let file1 = (dir as NSString).appendingPathComponent("pi10.txt")
@@ -52,8 +52,6 @@ class EasyDLTests: XCTestCase {
     }
     
     func testProgress() {
-        let dir: String = Bundle(for: type(of: self)).resourcePath!
-        
         let url1 = URL(string: "http://koherent.org/pi/pi10.txt")!
         let url2 = URL(string: "http://koherent.org/pi/pi100.txt")!
         let file1 = (dir as NSString).appendingPathComponent("pi10.txt")
@@ -99,8 +97,6 @@ class EasyDLTests: XCTestCase {
     }
     
     func testCache() {
-        let dir: String = Bundle(for: type(of: self)).resourcePath!
-        
         let url1 = URL(string: "http://koherent.org/pi/pi10.txt")!
         let url2 = URL(string: "http://koherent.org/pi/pi100.txt")!
         let url3 = URL(string: "http://koherent.org/pi/pi1000.txt")!
@@ -195,8 +191,6 @@ class EasyDLTests: XCTestCase {
     }
     
     func testCancel() {
-        let dir: String = Bundle(for: type(of: self)).resourcePath!
-        
         let url1 = URL(string: "http://koherent.org/pi/pi100000.txt")!
         let url2 = URL(string: "http://koherent.org/pi/pi1000000.txt")!
         let file1 = (dir as NSString).appendingPathComponent("pi100000.txt")
@@ -239,8 +233,6 @@ class EasyDLTests: XCTestCase {
     }
 
     func testFailure() {
-        let dir: String = Bundle(for: type(of: self)).resourcePath!
-        
         let url1 = URL(string: "http://koherent.org/pi/not-found.txt")!
         let url2 = URL(string: "http://koherent.org/pi/pi100.txt")!
         let file1 = (dir as NSString).appendingPathComponent("pi10.txt")
