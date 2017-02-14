@@ -301,7 +301,7 @@ public class Downloader {
     }
     
     public struct ResponseError: Error {
-        let response: URLResponse
+        public let response: URLResponse
     }
     
     private enum ContentLengthResult {
