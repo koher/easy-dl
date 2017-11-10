@@ -213,7 +213,13 @@ public class Downloader {
             self.bytesDownloaded = bytesDownloaded
         }
         progressHandlers.forEach {
-            $0(self.bytesDownloaded, self.bytesExpectedToDownload, self.currentItemIndex, totalBytesDownloadedForItem, totalBytesExpectedToDownloadForItem)
+            $0(
+                self.bytesDownloaded,
+                self.bytesExpectedToDownload,
+                self.currentItemIndex,
+                totalBytesDownloadedForItem,
+                totalBytesExpectedToDownloadForItem
+            )
         }
     }
     
@@ -242,10 +248,24 @@ public class Downloader {
         }
     }
     
-    public func progress(_ handler: @escaping (Int64, Int64?, Int, Int64, Int64?) -> ()) {
+    public func progress(
+        _ handler: @escaping (
+            _ bytesDownloaded: Int64,
+            _ bytesExpectedToDownload: Int64?,
+            _ itemIndex: Int,
+            _ bytesDownloadedForItem: Int64,
+            _ bytesExpectedToDownloadForItem: Int64?
+        ) -> ()
+    ) {
         DispatchQueue.main.async { [weak self] in
             if let zelf = self, let bytesDownloaded = zelf.bytesDownloaded {
-                handler(bytesDownloaded, zelf.bytesExpectedToDownload, zelf.items.count, zelf.bytesDownloadedForItem, zelf.bytesExpectedToDownloadForItem)
+                handler(
+                    bytesDownloaded,
+                    zelf.bytesExpectedToDownload,
+                    zelf.items.count,
+                    zelf.bytesDownloadedForItem,
+                    zelf.bytesExpectedToDownloadForItem
+                )
             }
             guard let zelf = self, zelf.result == nil else {
                 return
