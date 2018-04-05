@@ -79,13 +79,22 @@ Usually, a `Downloader` gets sizes of the `Item`s by sending HEAD requests and s
 
 ## Installation
 
+### Swift Package Manager
+
+**Package.swift**
+
 Use Swift Package Manager. Add the following to dependencies in your Package.swift file.
 
 ```swift
-.Package(
-    url: "https://github.com/koher/easy-dl.git",
-    majorVersion: 0
-)
+.package(url: "https://github.com/koher/easy-dl.git", from: "0.2.0-alpha"),
+```
+
+### [Carthage](https://github.com/Carthage/Carthage)
+
+**Cartfile**
+
+```
+github "koher/easy-dl" "0.2.0-alpha"
 ```
 
 ## License
