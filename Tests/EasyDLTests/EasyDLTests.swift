@@ -221,7 +221,7 @@ class EasyDLTests: XCTestCase {
         }
         
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             print("cancel")
             downloader.cancel()
         }
