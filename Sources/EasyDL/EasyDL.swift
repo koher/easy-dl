@@ -1,6 +1,6 @@
 import Foundation
 
-private typealias Cached = Bool
+private typealias IsCached = Bool
 
 public class Downloader {
     public let items: [Item]
@@ -39,7 +39,7 @@ public class Downloader {
         
         session = URLSession(configuration: .default, delegate: Delegate(downloader: self), delegateQueue: .main)
         
-        func download(_ cached: [Cached]) {
+        func download(_ cached: [IsCached]) {
             assert(items.count == cached.count) // Always true for `Downloader` without bugs
             self.download(ArraySlice(zip(items, cached)), self.complete(with:))
         }
@@ -57,7 +57,7 @@ public class Downloader {
                 }
             }
         } else {
-            download([Cached](repeating: false, count: items.count))
+            download([IsCached](repeating: false, count: items.count))
         }
     }
     
@@ -76,7 +76,7 @@ public class Downloader {
             case let .success(headLength, headCached):
                 let tail = items[(items.startIndex + 1)..<items.endIndex]
                 guard let headLength = headLength else {
-                    callback(.success(nil, headCached + [Cached](repeating: false, count: items.count - 1)))
+                    callback(.success(nil, headCached + [IsCached](repeating: false, count: items.count - 1)))
                     break
                 }
                 
@@ -152,7 +152,7 @@ public class Downloader {
         task.resume()
     }
     
-    private func download(_ items: ArraySlice<(Item, Cached)>, _ callback: @escaping (Result) -> ()) {
+    private func download(_ items: ArraySlice<(Item, IsCached)>, _ callback: @escaping (Result) -> ()) {
         currentItemIndex = items.startIndex
         
         guard let first = items.first else {
@@ -171,7 +171,7 @@ public class Downloader {
         }
     }
     
-    private func download(_ item: Item, _ cached: Cached, _ callback: @escaping (Result) -> ()) {
+    private func download(_ item: Item, _ cached: IsCached, _ callback: @escaping (Result) -> ()) {
         guard !canceled else {
             callback(.cancel)
             return
@@ -325,7 +325,7 @@ public class Downloader {
     }
     
     private enum ContentLengthResult {
-        case success(Int64?, [Cached])
+        case success(Int64?, [IsCached])
         case canceled
         case failure(Error)
     }
