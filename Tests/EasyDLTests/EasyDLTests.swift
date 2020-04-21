@@ -7,8 +7,8 @@ private let dir: String = #file.deletingLastPathComponent.deletingLastPathCompon
 
 class EasyDLTests: XCTestCase {
     func testExample() {
-        /**/ let url1 = URL(string: "http://koherent.org/pi/pi10.txt")!
-        /**/ let url2 = URL(string: "http://koherent.org/pi/pi100.txt")!
+        /**/ let url1 = URL(string: "https://koherent.org/pi/pi10.txt")!
+        /**/ let url2 = URL(string: "https://koherent.org/pi/pi100.txt")!
         /**/ let file1 = (dir as NSString).appendingPathComponent("pi10.txt")
         /**/ let file2 = (dir as NSString).appendingPathComponent("pi100.txt")
         
@@ -52,8 +52,8 @@ class EasyDLTests: XCTestCase {
     }
     
     func testProgress() {
-        let url1 = URL(string: "http://koherent.org/pi/pi10.txt")!
-        let url2 = URL(string: "http://koherent.org/pi/pi100.txt")!
+        let url1 = URL(string: "https://koherent.org/pi/pi10.txt")!
+        let url2 = URL(string: "https://koherent.org/pi/pi100.txt")!
         let file1 = (dir as NSString).appendingPathComponent("pi10.txt")
         let file2 = (dir as NSString).appendingPathComponent("pi100.txt")
         
@@ -97,9 +97,9 @@ class EasyDLTests: XCTestCase {
     }
     
     func testCache() {
-        let url1 = URL(string: "http://koherent.org/pi/pi10.txt")!
-        let url2 = URL(string: "http://koherent.org/pi/pi100.txt")!
-        let url3 = URL(string: "http://koherent.org/pi/pi1000.txt")!
+        let url1 = URL(string: "https://koherent.org/pi/pi10.txt")!
+        let url2 = URL(string: "https://koherent.org/pi/pi100.txt")!
+        let url3 = URL(string: "https://koherent.org/pi/pi1000.txt")!
         let file1 = (dir as NSString).appendingPathComponent("pi10.txt")
         let file2 = (dir as NSString).appendingPathComponent("pi100.txt")
         let file3 = (dir as NSString).appendingPathComponent("pi1000.txt")
@@ -191,8 +191,8 @@ class EasyDLTests: XCTestCase {
     }
     
     func testCancel() {
-        let url1 = URL(string: "http://koherent.org/pi/pi100000.txt")!
-        let url2 = URL(string: "http://koherent.org/pi/pi1000000.txt")!
+        let url1 = URL(string: "https://koherent.org/pi/pi100000.txt")!
+        let url2 = URL(string: "https://koherent.org/pi/pi1000000.txt")!
         let file1 = (dir as NSString).appendingPathComponent("pi100000.txt")
         let file2 = (dir as NSString).appendingPathComponent("pi1000000.txt")
         
@@ -233,8 +233,8 @@ class EasyDLTests: XCTestCase {
     }
 
     func testFailure() {
-        let url1 = URL(string: "http://koherent.org/pi/not-found.txt")!
-        let url2 = URL(string: "http://koherent.org/pi/pi100.txt")!
+        let url1 = URL(string: "https://koherent.org/pi/not-found.txt")!
+        let url2 = URL(string: "https://koherent.org/pi/pi100.txt")!
         let file1 = (dir as NSString).appendingPathComponent("pi10.txt")
         let file2 = (dir as NSString).appendingPathComponent("pi100.txt")
         
