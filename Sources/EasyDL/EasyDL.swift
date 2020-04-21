@@ -103,7 +103,7 @@ public class Downloader {
             return
         }
         
-        let request = NSMutableURLRequest(url: item.url)
+        var request = URLRequest(url: item.url)
         request.httpMethod = "HEAD"
         commonRequestHeaders?.forEach {
             request.setValue($0.1, forHTTPHeaderField: $0.0)
@@ -119,7 +119,7 @@ public class Downloader {
             callback(.success(0, [true]))
             return
         }
-        let task = session.dataTask(with: request as URLRequest) { _, response, error in
+        let task = session.dataTask(with: request) { _, response, error in
             if self.canceled {
                 callback(.canceled)
                 return
@@ -185,7 +185,7 @@ public class Downloader {
         currentItem = item
         currentCallback = callback
         
-        let request = NSMutableURLRequest(url: item.url)
+        var request = URLRequest(url: item.url)
         commonRequestHeaders?.forEach {
             request.setValue($0.1, forHTTPHeaderField: $0.0)
         }
@@ -201,7 +201,7 @@ public class Downloader {
             return
         }
         
-        let task = session.downloadTask(with: request as URLRequest)
+        let task = session.downloadTask(with: request)
         currentTask = task
         task.resume()
     }
