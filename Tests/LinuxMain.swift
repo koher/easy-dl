@@ -1,6 +1,8 @@
 import XCTest
-@testable import SwiftDLTests
 
-XCTMain([
-     testCase(SwiftDLTests.allTests),
-])
+import EasyDLTests
+
+var tests = [XCTestCaseEntry]()
+tests += EasyDLTests.__allTests()
+
+XCTMain(tests)
