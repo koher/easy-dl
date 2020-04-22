@@ -115,6 +115,7 @@ public final class Downloader {
             return
         }
         
+        var modificationDate: Date?
         var headerFields: [String: String] = [:]
         commonRequestHeaders?.forEach {
             headerFields[$0.0] = $0.1
@@ -123,14 +124,12 @@ public final class Downloader {
         case .always:
             break
         case .ifUpdated:
-            if let ifModifiedSince = item.ifModifiedSince {
-                headerFields["If-Modified-Since"] = ifModifiedSince
-            }
+            modificationDate = item.modificationDate
         case .ifNotCached:
             callback(.success(0, [true]))
             return
         }
-        let request = Session.Request(url: item.url, headerFields: headerFields)
+        let request = Session.Request(url: item.url, modificationDate: modificationDate, headerFields: headerFields)
         session.contentLengthWith(request, callback)
     }
     
@@ -167,6 +166,7 @@ public final class Downloader {
         currentItem = item
         currentCallback = callback
         
+        var modificationDate: Date?
         var headerFields: [String: String] = [:]
         commonRequestHeaders?.forEach {
             headerFields[$0.0] = $0.1
@@ -175,15 +175,13 @@ public final class Downloader {
         case .always:
             break
         case .ifUpdated:
-            if let ifModifiedSince = item.ifModifiedSince {
-                headerFields["If-Modified-Since"] = ifModifiedSince
-            }
+            modificationDate = item.modificationDate
         case .ifNotCached:
             callback(.success)
             return
         }
 
-        let request = Session.Request(url: item.url, headerFields: headerFields)
+        let request = Session.Request(url: item.url, modificationDate: modificationDate, headerFields: headerFields)
         session.downloadWith(request, progressHandler: { [weak self] progress in
             guard let self = self else { return }
             
@@ -315,10 +313,6 @@ public final class Downloader {
             return (try? FileManager.default.attributesOfItem(atPath: destination))?[FileAttributeKey.modificationDate] as? Date
         }
         
-        internal var ifModifiedSince: String? {
-            return modificationDate.map { Downloader.dateFormatter.string(from: $0) }
-        }
-        
         internal var fileExists: Bool {
             return FileManager.default.fileExists(atPath: destination)
         }
@@ -338,13 +332,5 @@ public final class Downloader {
         case success(Int64?, [IsCached])
         case cancel
         case failure(Error)
-    }
-
-    static internal var dateFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "EEE',' dd MMM yyyy HH':'mm':'ss 'GMT'"
-        formatter.locale = Locale(identifier: "en_US")
-        formatter.timeZone = TimeZone(abbreviation: "GMT")!
-        return formatter
     }
 }

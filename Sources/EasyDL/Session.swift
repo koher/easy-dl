@@ -25,6 +25,7 @@ internal class Session {
 
     struct Request {
         let url: URL
+        var modificationDate: Date?
         var headerFields: [String: String]
     }
     
@@ -59,10 +60,18 @@ internal final class FoundationURLSession: Session {
         session = URLSession(configuration: .default, delegate: Delegate(for: self), delegateQueue: .main)
     }
     
+    private static func setHeaderFields(of urlRequest: inout URLRequest, from request: Request) {
+        request.headerFields.forEach { urlRequest.setValue($0.1, forHTTPHeaderField: $0.0) }
+        if let modificationDate = request.modificationDate {
+            let ifModifiedSince = Self.dateFormatter.string(from: modificationDate)
+            urlRequest.setValue(ifModifiedSince, forHTTPHeaderField: "If-Modified-Since")
+        }
+    }
+    
     override func contentLengthWith(_ request: Request, _ handler: @escaping (Downloader.ContentLengthResult) -> Void) {
         var urlRequest = URLRequest(url: request.url)
         urlRequest.httpMethod = "HEAD"
-        request.headerFields.forEach { urlRequest.setValue($0.1, forHTTPHeaderField: $0.0) }
+        Self.setHeaderFields(of: &urlRequest, from: request)
         let task = session.dataTask(with: urlRequest) { _, urlResponse, error in
             if let error = error {
                 handler(.failure(error))
@@ -100,8 +109,8 @@ internal final class FoundationURLSession: Session {
         currentResultHandler = resultHandler
         
         var urlRequest = URLRequest(url: request.url)
-        request.headerFields.forEach { urlRequest.setValue($0.1, forHTTPHeaderField: $0.0) }
-        
+        Self.setHeaderFields(of: &urlRequest, from: request)
+
         let task = session.downloadTask(with: urlRequest)
         currentTask = task
         task.resume()
@@ -154,7 +163,7 @@ internal final class FoundationURLSession: Session {
             }
             
             if let lastModified = response.allHeaderFields["Last-Modified"] as? String,
-                let modificationDate = Downloader.dateFormatter.date(from: lastModified) {
+                let modificationDate = FoundationURLSession.dateFormatter.date(from: lastModified) {
                 handler(.success((location: location, modificationDate: modificationDate)))
             } else {
                 handler(.success((location: location, modificationDate: nil)))
@@ -172,5 +181,13 @@ internal final class FoundationURLSession: Session {
             )
             handler(progress)
         }
+    }
+    
+    static internal var dateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE',' dd MMM yyyy HH':'mm':'ss 'GMT'"
+        formatter.locale = Locale(identifier: "en_US")
+        formatter.timeZone = TimeZone(abbreviation: "GMT")!
+        return formatter
     }
 }
