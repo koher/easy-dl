@@ -1,8 +1,8 @@
 import Foundation
 
-private typealias IsCached = Bool
+internal typealias IsCached = Bool
 
-public class Downloader {
+public final class Downloader {
     public let items: [Item]
     public let needsPreciseProgress: Bool
     public let commonStrategy: Strategy
@@ -17,7 +17,8 @@ public class Downloader {
     private var bytesExpectedToDownloadForItem: Int64? = nil
     private var result: Result? = nil
     
-    private var session: URLSession! = nil
+    private var session: Session
+    private var zelf: Downloader? // To prevent releasing this instance during downloading
 
     private var currentItemIndex: Int = 0
     private var currentItem: Item! = nil
@@ -25,19 +26,30 @@ public class Downloader {
     private var currentTask: URLSessionTask? = nil
     
     private var canceled: Bool = false
-
-    public init(
+    
+    public convenience init(
         items: [Item],
         needsPreciseProgress: Bool = true,
         commonStrategy: Strategy = .ifUpdated,
         commonRequestHeaders: [String: String]? = nil
     ) {
+        self.init(session: FoundationURLSession(), items: items, needsPreciseProgress: needsPreciseProgress, commonStrategy: commonStrategy, commonRequestHeaders: commonRequestHeaders)
+    }
+
+    internal init(
+        session: Session,
+        items: [Item],
+        needsPreciseProgress: Bool,
+        commonStrategy: Strategy,
+        commonRequestHeaders: [String: String]?
+    ) {
+        self.session = session
         self.items = items
         self.needsPreciseProgress = needsPreciseProgress
         self.commonStrategy = commonStrategy
         self.commonRequestHeaders = commonRequestHeaders
         
-        session = URLSession(configuration: .default, delegate: Delegate(downloader: self), delegateQueue: .main)
+        zelf = self
         
         func download(_ cached: [IsCached]) {
             assert(items.count == cached.count) // Always true for `Downloader` without bugs
@@ -103,53 +115,23 @@ public class Downloader {
             return
         }
         
-        var request = URLRequest(url: item.url)
-        request.httpMethod = "HEAD"
+        var headerFields: [String: String] = [:]
         commonRequestHeaders?.forEach {
-            request.setValue($0.1, forHTTPHeaderField: $0.0)
+            headerFields[$0.0] = $0.1
         }
         switch item.strategy ?? commonStrategy {
         case .always:
             break
         case .ifUpdated:
             if let ifModifiedSince = item.ifModifiedSince {
-                request.setValue(ifModifiedSince, forHTTPHeaderField: "If-Modified-Since")
+                headerFields["If-Modified-Since"] = ifModifiedSince
             }
         case .ifNotCached:
             callback(.success(0, [true]))
             return
         }
-        let task = session.dataTask(with: request) { _, response, error in
-            if self.canceled {
-                callback(.canceled)
-                return
-            }
-            
-            if let error = error {
-                callback(.failure(error))
-                return
-            }
-            
-            guard let response = response as? HTTPURLResponse else {
-                callback(.success(nil, [false]))
-                return
-            }
-            
-            if response.statusCode == 304 {
-                callback(.success(0, [true]))
-                return
-            }
-            
-            let contentLength = response.expectedContentLength
-            guard contentLength != -1 else { // `-1` because no `NSURLResponseUnknownLength` in Swift
-                callback(.success(nil, [false]))
-                return
-            }
-            
-            callback(.success(contentLength, [false]))
-        }
-        currentTask = task
-        task.resume()
+        let request = Session.Request(url: item.url, headerFields: headerFields)
+        session.contentLengthWith(request, callback)
     }
     
     private func download(_ items: ArraySlice<(Item, IsCached)>, _ callback: @escaping (Result) -> ()) {
@@ -185,25 +167,55 @@ public class Downloader {
         currentItem = item
         currentCallback = callback
         
-        var request = URLRequest(url: item.url)
+        var headerFields: [String: String] = [:]
         commonRequestHeaders?.forEach {
-            request.setValue($0.1, forHTTPHeaderField: $0.0)
+            headerFields[$0.0] = $0.1
         }
         switch item.strategy ?? commonStrategy {
         case .always:
             break
         case .ifUpdated:
             if let ifModifiedSince = item.ifModifiedSince {
-                request.setValue(ifModifiedSince, forHTTPHeaderField: "If-Modified-Since")
+                headerFields["If-Modified-Since"] = ifModifiedSince
             }
         case .ifNotCached:
             callback(.success)
             return
         }
-        
-        let task = session.downloadTask(with: request)
-        currentTask = task
-        task.resume()
+
+        let request = Session.Request(url: item.url, headerFields: headerFields)
+        session.downloadWith(request, progressHandler: { [weak self] progress in
+            guard let self = self else { return }
+            
+            self.bytesDownloadedForItem = progress.totalBytesDownloaded
+            self.bytesExpectedToDownloadForItem = progress.totalBytesExpectedToDownload
+            self.makeProgress(
+                bytesDownloaded: progress.bytesDownloaded,
+                totalBytesDownloadedForItem: progress.totalBytesDownloaded,
+                totalBytesExpectedToDownloadForItem: progress.totalBytesExpectedToDownload
+            )
+        }, resultHandler: { result in
+            switch result {
+            case .success((location: let location, modificationDate: let modificationDate)?):
+                let fileManager = FileManager.default
+                try? fileManager.removeItem(atPath: item.destination) // OK though it fails if the file does not exists
+                do {
+                    try fileManager.moveItem(at: location, to: URL(fileURLWithPath: item.destination))
+                    if let modificationDate = modificationDate {
+                        try fileManager.setAttributes([.modificationDate: modificationDate], ofItemAtPath: item.destination)
+                    }
+                    callback(.success)
+                } catch let error {
+                    callback(.failure(error))
+                }
+            case .success(.none):
+                callback(.success)
+            case .cancel:
+                callback(.cancel)
+            case .failure(let error):
+                callback(.failure(error))
+            }
+        })
     }
     
     private func makeProgress(bytesDownloaded: Int64, totalBytesDownloadedForItem: Int64, totalBytesExpectedToDownloadForItem: Int64?) {
@@ -233,10 +245,8 @@ public class Downloader {
         progressHandlers.removeAll()
         completionHandlers.removeAll()
         
-        session.finishTasksAndInvalidate()
-        session = nil
-        // `self` is released by this if it is not retained outside
-        // because the `delegate` which retains `self` is released.
+        session.complete()
+        zelf = nil
     }
     
     public func cancel() {
@@ -258,13 +268,13 @@ public class Downloader {
         ) -> ()
     ) {
         DispatchQueue.main.async { [weak self] in
-            if let zelf = self, let bytesDownloaded = zelf.bytesDownloaded {
+            if let self = self, let bytesDownloaded = self.bytesDownloaded {
                 handler(
                     bytesDownloaded,
-                    zelf.bytesExpectedToDownload,
-                    zelf.items.count,
-                    zelf.bytesDownloadedForItem,
-                    zelf.bytesExpectedToDownloadForItem
+                    self.bytesExpectedToDownload,
+                    self.items.count,
+                    self.bytesDownloadedForItem,
+                    self.bytesExpectedToDownloadForItem
                 )
             }
             guard let zelf = self, zelf.result == nil else {
@@ -324,73 +334,12 @@ public class Downloader {
         public let response: URLResponse
     }
     
-    private enum ContentLengthResult {
+    internal enum ContentLengthResult {
         case success(Int64?, [IsCached])
         case canceled
         case failure(Error)
     }
-    
-    private class Delegate: NSObject, URLSessionDelegate, URLSessionTaskDelegate, URLSessionDownloadDelegate {
-        let downloader: Downloader
-        
-        init(downloader: Downloader) {
-            self.downloader = downloader
-        }
-        
-        func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
-            let callback = downloader.currentCallback!
 
-            if downloader.canceled {
-                callback(.cancel)
-                return
-            }
-            
-            if let error = error {
-                callback(.failure(error))
-            }
-        }
-        
-        func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
-            let item = downloader.currentItem!
-            let callback = downloader.currentCallback!
-
-            let response = (downloadTask.response as? HTTPURLResponse)!
-            if response.statusCode == 304 {
-                callback(.success)
-                return
-            }
-            guard response.statusCode == 200 else {
-                callback(.failure(ResponseError(response: response)))
-                return
-            }
-            
-            let fileManager = FileManager.default
-            try? fileManager.removeItem(atPath: item.destination) // OK though it fails if the file does not exists
-            do {
-                try fileManager.moveItem(at: location, to: URL(fileURLWithPath: item.destination))
-                if let lastModified = response.allHeaderFields["Last-Modified"] as? String {
-                    if let modificationDate = Downloader.dateFormatter.date(from: lastModified) {
-                        try fileManager.setAttributes([.modificationDate: modificationDate], ofItemAtPath: item.destination)
-                    }
-                }
-                callback(.success)
-            } catch let error {
-                callback(.failure(error))
-            }
-        }
-        
-        func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
-            downloader.bytesDownloadedForItem = totalBytesWritten
-            downloader.bytesExpectedToDownloadForItem = totalBytesExpectedToWrite
-            downloader.makeProgress(
-                bytesDownloaded: bytesWritten,
-                totalBytesDownloadedForItem: totalBytesWritten,
-                totalBytesExpectedToDownloadForItem: totalBytesExpectedToWrite == NSURLSessionTransferSizeUnknown
-                    ? nil : totalBytesExpectedToWrite
-            )
-        }
-    }
-    
     static internal var dateFormatter: DateFormatter {
         let formatter = DateFormatter()
         formatter.dateFormat = "EEE',' dd MMM yyyy HH':'mm':'ss 'GMT'"

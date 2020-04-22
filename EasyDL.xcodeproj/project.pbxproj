@@ -28,6 +28,10 @@
 		D62C6EB01FB5753E00E7DF02 /* StringExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = D62C6E991FB5751B00E7DF02 /* StringExtensions.swift */; };
 		D62C6EB11FB5753F00E7DF02 /* EasyDLTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D62C6E971FB5751B00E7DF02 /* EasyDLTests.swift */; };
 		D62C6EB21FB5753F00E7DF02 /* StringExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = D62C6E991FB5751B00E7DF02 /* StringExtensions.swift */; };
+		D638DDE3244EF77D00DBC78E /* Session.swift in Sources */ = {isa = PBXBuildFile; fileRef = D638DDE2244EF77D00DBC78E /* Session.swift */; };
+		D638DDE4244EF90200DBC78E /* Session.swift in Sources */ = {isa = PBXBuildFile; fileRef = D638DDE2244EF77D00DBC78E /* Session.swift */; };
+		D638DDE5244EF90300DBC78E /* Session.swift in Sources */ = {isa = PBXBuildFile; fileRef = D638DDE2244EF77D00DBC78E /* Session.swift */; };
+		D638DDE6244EF90300DBC78E /* Session.swift in Sources */ = {isa = PBXBuildFile; fileRef = D638DDE2244EF77D00DBC78E /* Session.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -71,6 +75,7 @@
 		D62C6E9E1FB5751B00E7DF02 /* EasyDL.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EasyDL.swift; sourceTree = "<group>"; };
 		D62C6E9F1FB5751B00E7DF02 /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
 		D62C6EA01FB5751B00E7DF02 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		D638DDE2244EF77D00DBC78E /* Session.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Session.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -187,6 +192,7 @@
 				D62C6E9E1FB5751B00E7DF02 /* EasyDL.swift */,
 				D62C6E9F1FB5751B00E7DF02 /* Extensions.swift */,
 				D62C6EA01FB5751B00E7DF02 /* Info.plist */,
+				D638DDE2244EF77D00DBC78E /* Session.swift */,
 			);
 			path = EasyDL;
 			sourceTree = "<group>";
@@ -477,6 +483,7 @@
 			files = (
 				D62C6EA21FB5752300E7DF02 /* EasyDL.swift in Sources */,
 				D62C6EA31FB5752300E7DF02 /* Extensions.swift in Sources */,
+				D638DDE3244EF77D00DBC78E /* Session.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -495,6 +502,7 @@
 			files = (
 				D62C6EA51FB5752400E7DF02 /* EasyDL.swift in Sources */,
 				D62C6EA61FB5752400E7DF02 /* Extensions.swift in Sources */,
+				D638DDE4244EF90200DBC78E /* Session.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -513,6 +521,7 @@
 			files = (
 				D62C6EA81FB5752400E7DF02 /* EasyDL.swift in Sources */,
 				D62C6EA91FB5752400E7DF02 /* Extensions.swift in Sources */,
+				D638DDE5244EF90300DBC78E /* Session.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -531,6 +540,7 @@
 			files = (
 				D62C6EAB1FB5752500E7DF02 /* EasyDL.swift in Sources */,
 				D62C6EAC1FB5752500E7DF02 /* Extensions.swift in Sources */,
+				D638DDE6244EF90300DBC78E /* Session.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
