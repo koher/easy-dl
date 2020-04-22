@@ -1,5 +1,9 @@
 import XCTest
+#if DEBUG
 @testable import EasyDL
+#else
+import EasyDL
+#endif
 
 import Foundation
 
@@ -109,7 +113,13 @@ class EasyDLTests: XCTestCase {
         try? fileManager.removeItem(at: URL(fileURLWithPath: file2))
         try? fileManager.removeItem(at: URL(fileURLWithPath: file3))
         
-        for count in 0..<6 {
+        let range: Range<Int>
+        #if DEBUG
+        range = 0 ..< 6
+        #else
+        range = 0 ..< 5
+        #endif
+        for count in range {
             let downloader: Downloader
             switch count {
             case 0, 1:
@@ -123,6 +133,7 @@ class EasyDLTests: XCTestCase {
                 let item1 = Item(url: url1, destination: file1)
                 let item2 = Item(url: url2, destination: file2, strategy: .always)
                 downloader = Downloader(items: [item1, item2], commonRequestHeaders: ["Accept-Encoding": "identity"])
+            #if DEBUG
             case 5:
                 typealias Item = Downloader.Item
                 let item1 = Item(url: url1, destination: file1)
@@ -130,6 +141,7 @@ class EasyDLTests: XCTestCase {
                 try! fileManager.setAttributes([.modificationDate: item1.modificationDate! - 1], ofItemAtPath: item1.destination)
                 try! fileManager.setAttributes([.modificationDate: item3.modificationDate! - 1], ofItemAtPath: item3.destination)
                 downloader = Downloader(items: [item1, item3], commonRequestHeaders: ["Accept-Encoding": "identity"])
+            #endif
             default:
                 fatalError("Never reaches here.")
             }
