@@ -25,7 +25,7 @@ public final class Downloader {
     private var currentCallback: ((Result) -> ())? = nil
     private var currentTask: URLSessionTask? = nil
     
-    private var canceled: Bool = false
+    private var isCancelled: Bool = false
     
     public convenience init(
         items: [Item],
@@ -59,7 +59,7 @@ public final class Downloader {
         if needsPreciseProgress {
             contentLength(of: items[0..<items.count]) { result in
                 switch result {
-                case .canceled:
+                case .cancel:
                     self.complete(with: .cancel)
                 case let .failure(error):
                     self.complete(with: .failure(error))
@@ -83,7 +83,7 @@ public final class Downloader {
         
         contentLength(of: first) { result in
             switch result {
-            case .canceled, .failure:
+            case .cancel, .failure:
                 callback(result)
             case let .success(headLength, headCached):
                 let tail = items[(items.startIndex + 1)..<items.endIndex]
@@ -94,7 +94,7 @@ public final class Downloader {
                 
                 self.contentLength(of: tail) { result in
                     switch result {
-                    case .canceled, .failure:
+                    case .cancel, .failure:
                         callback(result)
                     case let .success(tailLength, tailCached):
                         guard let tailLength = tailLength else {
@@ -110,8 +110,8 @@ public final class Downloader {
     }
     
     private func contentLength(of item: Item, _ callback: @escaping (ContentLengthResult) -> ()) {
-        guard !canceled else {
-            callback(.canceled)
+        guard !isCancelled else {
+            callback(.cancel)
             return
         }
         
@@ -154,7 +154,7 @@ public final class Downloader {
     }
     
     private func download(_ item: Item, _ cached: IsCached, _ callback: @escaping (Result) -> ()) {
-        guard !canceled else {
+        guard !isCancelled else {
             callback(.cancel)
             return
         }
@@ -251,9 +251,9 @@ public final class Downloader {
     
     public func cancel() {
         DispatchQueue.main.async {
-            guard !self.canceled else { return }
+            guard !self.isCancelled else { return }
             
-            self.canceled = true
+            self.isCancelled = true
             self.currentTask?.cancel()
         }
     }
@@ -336,7 +336,7 @@ public final class Downloader {
     
     internal enum ContentLengthResult {
         case success(Int64?, [IsCached])
-        case canceled
+        case cancel
         case failure(Error)
     }
 
