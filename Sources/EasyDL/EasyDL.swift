@@ -126,8 +126,10 @@ public final class Downloader {
         case .ifUpdated:
             modificationDate = item.modificationDate
         case .ifNotCached:
-            callback(.success(0, [true]))
-            return
+            if item.fileExists {
+                callback(.success(0, [true]))
+                return
+            }
         }
         let request = Session.Request(url: item.url, modificationDate: modificationDate, headerFields: headerFields)
         session.contentLengthWith(request, callback)
@@ -177,8 +179,7 @@ public final class Downloader {
         case .ifUpdated:
             modificationDate = item.modificationDate
         case .ifNotCached:
-            callback(.success)
-            return
+            break
         }
 
         let request = Session.Request(url: item.url, modificationDate: modificationDate, headerFields: headerFields)
