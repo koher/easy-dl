@@ -110,7 +110,7 @@ public final class Downloader {
     }
     
     private func contentLength(of item: Item, _ callback: @escaping (ContentLengthResult) -> ()) {
-        guard !isCancelled else {
+        if isCancelled {
             callback(.cancel)
             return
         }
@@ -153,12 +153,12 @@ public final class Downloader {
     }
     
     private func download(_ item: Item, _ isCached: IsCached, _ callback: @escaping (Result) -> ()) {
-        guard !isCancelled else {
+        if isCancelled {
             callback(.cancel)
             return
         }
         
-        guard !isCached else {
+        if isCached {
             callback(.success)
             return
         }
@@ -249,7 +249,7 @@ public final class Downloader {
     
     public func cancel() {
         DispatchQueue.main.async {
-            guard !self.isCancelled else { return }
+            if self.isCancelled { return }
             
             self.isCancelled = true
             self.currentTask?.cancel()

@@ -89,7 +89,7 @@ internal final class FoundationURLSession: Session {
             }
             
             let contentLength = urlResponse.expectedContentLength
-            guard contentLength != -1 else { // `-1` because no `NSURLResponseUnknownLength` in Swift
+            if contentLength == -1 { // `-1` because no `NSURLResponseUnknownLength` in Swift
                 handler(.success(nil, [false]))
                 return
             }
