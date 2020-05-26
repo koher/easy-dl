@@ -51,9 +51,9 @@ public final class Downloader {
         
         zelf = self
         
-        func download(_ cached: [IsCached]) {
-            assert(items.count == cached.count) // Always true for `Downloader` without bugs
-            self.download(ArraySlice(zip(items, cached)), self.complete(with:))
+        func download(_ isCached: [IsCached]) {
+            assert(items.count == isCached.count) // Always true for `Downloader` without bugs
+            self.download(ArraySlice(zip(items, isCached)), self.complete(with:))
         }
 
         if needsPreciseProgress {
@@ -63,9 +63,9 @@ public final class Downloader {
                     self.complete(with: .cancel)
                 case let .failure(error):
                     self.complete(with: .failure(error))
-                case let .success(length, cached):
+                case let .success(length, isCached):
                     self.bytesExpectedToDownload = length
-                    download(cached)
+                    download(isCached)
                 }
             }
         } else {
@@ -141,8 +141,8 @@ public final class Downloader {
             return
         }
         
-        let (item, cached) = first
-        download(item, cached) { result in
+        let (item, isCached) = first
+        download(item, isCached) { result in
             switch result {
             case .cancel, .failure:
                 callback(result)
@@ -152,13 +152,13 @@ public final class Downloader {
         }
     }
     
-    private func download(_ item: Item, _ cached: IsCached, _ callback: @escaping (Result) -> ()) {
+    private func download(_ item: Item, _ isCached: IsCached, _ callback: @escaping (Result) -> ()) {
         guard !isCancelled else {
             callback(.cancel)
             return
         }
         
-        guard !cached else {
+        guard !isCached else {
             callback(.success)
             return
         }
