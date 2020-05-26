@@ -57,7 +57,7 @@ public final class Downloader {
         }
 
         if needsPreciseProgress {
-            contentLength(of: items[0..<items.count]) { result in
+            contentLength(of: items[...]) { result in
                 switch result {
                 case .cancel:
                     self.complete(with: .cancel)
@@ -86,7 +86,7 @@ public final class Downloader {
             case .cancel, .failure:
                 callback(result)
             case let .success(headLength, headCached):
-                let tail = items[(items.startIndex + 1)..<items.endIndex]
+                let tail = items[(items.startIndex + 1)...]
                 guard let headLength = headLength else {
                     callback(.success(nil, headCached + [IsCached](repeating: false, count: items.count - 1)))
                     break
@@ -147,7 +147,7 @@ public final class Downloader {
             case .cancel, .failure:
                 callback(result)
             case .success:
-                self.download(items[(items.startIndex + 1)..<items.endIndex], callback)
+                self.download(items[(items.startIndex + 1)...], callback)
             }
         }
     }
