@@ -122,7 +122,12 @@ class EasyDLTests: XCTestCase {
         for count in range {
             let downloader: Downloader
             switch count {
-            case 0, 1:
+            case 0:
+                typealias Item = Downloader.Item
+                let item1 = Item(url: url1, destination: file1)
+                let item2 = Item(url: url2, destination: file2, strategy: .ifNotCached) // tests downloading without cache with `.ifNotCached`
+                downloader = Downloader(items: [item1, item2], commonRequestHeaders: ["Accept-Encoding": "identity"])
+            case 1:
                 downloader = Downloader(items: [(url1, file1), (url2, file2)], commonRequestHeaders: ["Accept-Encoding": "identity"])
             case 2:
                 downloader = Downloader(items: [(url2, file2), (url3, file3)], commonRequestHeaders: ["Accept-Encoding": "identity"])
