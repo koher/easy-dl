@@ -8,7 +8,7 @@ public final class Downloader {
     public let cachePolicy: CachePolicy
     public let requestHeaders: [String: String]?
     
-    private var progressHandlers: [(Int64, Int64?, Int, Int64, Int64?) -> ()] = []
+    private var progressHandlers: [(Progress) -> Void] = []
     private var completionHandlers: [(Result) -> ()] = []
 
     private var bytesDownloaded: Int64! = nil
@@ -224,13 +224,13 @@ public final class Downloader {
             self.bytesDownloaded = bytesDownloaded
         }
         progressHandlers.forEach {
-            $0(
-                self.bytesDownloaded,
-                self.bytesExpectedToDownload,
-                self.currentItemIndex,
-                totalBytesDownloadedForItem,
-                totalBytesExpectedToDownloadForItem
-            )
+            $0(Progress(
+                bytesDownloaded: self.bytesDownloaded,
+                bytesExpectedToDownload: self.bytesExpectedToDownload,
+                itemIndex: self.currentItemIndex,
+                bytesDownloadedForItem: totalBytesDownloadedForItem,
+                bytesExpectedToDownloadForItem: totalBytesExpectedToDownloadForItem
+            ))
         }
     }
     
@@ -257,6 +257,26 @@ public final class Downloader {
         }
     }
     
+    internal func progress(_ handler: @escaping (Progress) -> Void) {
+        DispatchQueue.main.async {
+            if let bytesDownloaded = self.bytesDownloaded {
+                handler(Progress(
+                    bytesDownloaded: bytesDownloaded,
+                    bytesExpectedToDownload: self.bytesExpectedToDownload,
+                    itemIndex: self.items.count,
+                    bytesDownloadedForItem: self.bytesDownloadedForItem,
+                    bytesExpectedToDownloadForItem: self.bytesExpectedToDownloadForItem
+                ))
+            }
+            guard self.result == nil else {
+                return
+            }
+            
+            self.progressHandlers.append(handler)
+        }
+
+    }
+    
     public func progress(
         _ handler: @escaping (
             _ bytesDownloaded: Int64,
@@ -266,21 +286,14 @@ public final class Downloader {
             _ bytesExpectedToDownloadForItem: Int64?
         ) -> ()
     ) {
-        DispatchQueue.main.async { [weak self] in
-            if let self = self, let bytesDownloaded = self.bytesDownloaded {
-                handler(
-                    bytesDownloaded,
-                    self.bytesExpectedToDownload,
-                    self.items.count,
-                    self.bytesDownloadedForItem,
-                    self.bytesExpectedToDownloadForItem
-                )
-            }
-            guard let zelf = self, zelf.result == nil else {
-                return
-            }
-            
-            self?.progressHandlers.append(handler)
+        progress { (progress: Progress) in
+            handler(
+                progress.bytesDownloaded,
+                progress.bytesExpectedToDownload,
+                progress.itemIndex,
+                progress.bytesDownloadedForItem,
+                progress.bytesExpectedToDownloadForItem
+            )
         }
     }
     
@@ -292,6 +305,22 @@ public final class Downloader {
             }
             
             self.completionHandlers.append(handler)
+        }
+    }
+    
+    internal struct Progress {
+        public let bytesDownloaded: Int64
+        public let bytesExpectedToDownload: Int64?
+        public let itemIndex: Int
+        public let bytesDownloadedForItem: Int64
+        public let bytesExpectedToDownloadForItem: Int64?
+
+        internal init(bytesDownloaded: Int64, bytesExpectedToDownload: Int64?, itemIndex: Int, bytesDownloadedForItem: Int64, bytesExpectedToDownloadForItem: Int64?) {
+            self.bytesDownloaded = bytesDownloaded
+            self.bytesExpectedToDownload = bytesExpectedToDownload
+            self.itemIndex = itemIndex
+            self.bytesDownloadedForItem = bytesDownloadedForItem
+            self.bytesExpectedToDownloadForItem = bytesExpectedToDownloadForItem
         }
     }
     
