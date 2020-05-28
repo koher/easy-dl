@@ -17,8 +17,8 @@ extension Downloader {
 
     public func progress(
         _ handler: @escaping (
-            _ bytesDownloaded: Int64,
-            _ bytesExpectedToDownload: Int64?
+            _ bytesDownloaded: Int,
+            _ bytesExpectedToDownload: Int?
         ) -> ()
     ) {
         progress { done, whole, _, _, _ in

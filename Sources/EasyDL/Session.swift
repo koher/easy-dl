@@ -30,9 +30,9 @@ internal class Session {
     }
     
     struct Progress {
-        var bytesDownloaded: Int64
-        var totalBytesDownloaded: Int64
-        var totalBytesExpectedToDownload: Int64?
+        var bytesDownloaded: Int
+        var totalBytesDownloaded: Int
+        var totalBytesExpectedToDownload: Int?
     }
     
     enum Result {
@@ -94,7 +94,7 @@ internal final class FoundationURLSession: Session {
                 return
             }
             
-            handler(.success(contentLength, [false]))
+            handler(.success(Int(contentLength), [false]))
         }
         self.currentTask = task
         task.resume()
@@ -174,10 +174,10 @@ internal final class FoundationURLSession: Session {
             let handler = object.currentProgressHandler!
             
             let progress = Progress(
-                bytesDownloaded: bytesWritten,
-                totalBytesDownloaded: totalBytesWritten,
+                bytesDownloaded: Int(bytesWritten),
+                totalBytesDownloaded: Int(totalBytesWritten),
                 totalBytesExpectedToDownload: totalBytesExpectedToWrite == NSURLSessionTransferSizeUnknown
-                    ? nil : totalBytesExpectedToWrite
+                    ? nil : Int(totalBytesExpectedToWrite)
             )
             handler(progress)
         }

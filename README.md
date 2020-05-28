@@ -46,7 +46,7 @@ let downloader = Downloader(items: [item1, item2, item3])
 Following three overloads of `progress` are available.
 
 ```swift
-downloader.progress { (bytesDownloaded: Int64, bytesExpectedToDownload: Int64?) in
+downloader.progress { (bytesDownloaded: Int, bytesExpectedToDownload: Int?) in
     print("\(bytesDownloaded) / \(bytesExpectedToDownload!)")
 }
 ```
@@ -59,11 +59,11 @@ downloader.progress { (rate: Float?) in
 
 ```swift
 downloader.progress { (
-    bytesDownloaded: Int64,
-    bytesExpectedToDownload: Int64?,
+    bytesDownloaded: Int,
+    bytesExpectedToDownload: Int?,
     currentItemIndex: Int,
-    bytesDownloadedForCurrentItem: Int64,
-    bytesExpectedToDownloadForCurrentItem: Int64?
+    bytesDownloadedForCurrentItem: Int,
+    bytesExpectedToDownloadForCurrentItem: Int?
 ) in
     print("\(currentItemIndex) / \(downloader.items.count)")
 }

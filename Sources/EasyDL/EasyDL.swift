@@ -11,10 +11,10 @@ public final class Downloader {
     private var progressHandlers: [(Progress) -> Void] = []
     private var completionHandlers: [(Result) -> ()] = []
 
-    private var bytesDownloaded: Int64! = nil
-    private var bytesExpectedToDownload: Int64? = nil
-    private var bytesDownloadedForItem: Int64! = nil
-    private var bytesExpectedToDownloadForItem: Int64? = nil
+    private var bytesDownloaded: Int! = nil
+    private var bytesExpectedToDownload: Int? = nil
+    private var bytesDownloadedForItem: Int! = nil
+    private var bytesExpectedToDownloadForItem: Int? = nil
     private var result: Result? = nil
     
     private var session: Session
@@ -217,7 +217,7 @@ public final class Downloader {
         })
     }
     
-    private func makeProgress(bytesDownloaded: Int64, totalBytesDownloadedForItem: Int64, totalBytesExpectedToDownloadForItem: Int64?) {
+    private func makeProgress(bytesDownloaded: Int, totalBytesDownloadedForItem: Int, totalBytesExpectedToDownloadForItem: Int?) {
         if let _ = self.bytesDownloaded {
             self.bytesDownloaded! += bytesDownloaded
         } else {
@@ -279,11 +279,11 @@ public final class Downloader {
     
     public func progress(
         _ handler: @escaping (
-            _ bytesDownloaded: Int64,
-            _ bytesExpectedToDownload: Int64?,
+            _ bytesDownloaded: Int,
+            _ bytesExpectedToDownload: Int?,
             _ itemIndex: Int,
-            _ bytesDownloadedForItem: Int64,
-            _ bytesExpectedToDownloadForItem: Int64?
+            _ bytesDownloadedForItem: Int,
+            _ bytesExpectedToDownloadForItem: Int?
         ) -> ()
     ) {
         progress { (progress: Progress) in
@@ -309,13 +309,13 @@ public final class Downloader {
     }
     
     internal struct Progress {
-        public let bytesDownloaded: Int64
-        public let bytesExpectedToDownload: Int64?
+        public let bytesDownloaded: Int
+        public let bytesExpectedToDownload: Int?
         public let itemIndex: Int
-        public let bytesDownloadedForItem: Int64
-        public let bytesExpectedToDownloadForItem: Int64?
+        public let bytesDownloadedForItem: Int
+        public let bytesExpectedToDownloadForItem: Int?
 
-        internal init(bytesDownloaded: Int64, bytesExpectedToDownload: Int64?, itemIndex: Int, bytesDownloadedForItem: Int64, bytesExpectedToDownloadForItem: Int64?) {
+        internal init(bytesDownloaded: Int, bytesExpectedToDownload: Int?, itemIndex: Int, bytesDownloadedForItem: Int, bytesExpectedToDownloadForItem: Int?) {
             self.bytesDownloaded = bytesDownloaded
             self.bytesExpectedToDownload = bytesExpectedToDownload
             self.itemIndex = itemIndex
@@ -359,7 +359,7 @@ public final class Downloader {
     }
     
     internal enum ContentLengthResult {
-        case success(Int64?, [IsCached])
+        case success(Int?, [IsCached])
         case cancel
         case failure(Error)
     }
