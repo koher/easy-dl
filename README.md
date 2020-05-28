@@ -77,26 +77,6 @@ let downloader = Downloader(items: [(url1, file1), (url2, file2)], needsPreciseP
 
 Usually, a `Downloader` gets sizes of the `Item`s by sending HEAD requests and summing up `Content-Length`s in the response headers before starting downloads. When `needsPreciseProgress` is `false`, a `Downloader` omits those HEAD request. Then `progress` for `Float?` calls a callback with pseudo progress, which is calculated on the assumption that all `Item`s has a same size. That is, the amout of the progress for one `Item` is `1.0 / Float(items.count)`.
 
-## Installation
-
-### Swift Package Manager
-
-**Package.swift**
-
-Use Swift Package Manager. Add the following to dependencies in your Package.swift file.
-
-```swift
-.package(url: "https://github.com/koher/easy-dl.git", from: "0.2.0"),
-```
-
-### [Carthage](https://github.com/Carthage/Carthage)
-
-**Cartfile**
-
-```
-github "koher/easy-dl" "0.2.0"
-```
-
 ## License
 
 [The MIT License](LICENSE)
