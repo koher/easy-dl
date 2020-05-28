@@ -1,5 +1,9 @@
 import XCTest
+#if DEBUG
 @testable import EasyDL
+#else
+import EasyDL
+#endif
 
 import Foundation
 
@@ -7,8 +11,8 @@ private let dir: String = #file.deletingLastPathComponent.deletingLastPathCompon
 
 class EasyDLTests: XCTestCase {
     func testExample() {
-        /**/ let url1 = URL(string: "http://koherent.org/pi/pi10.txt")!
-        /**/ let url2 = URL(string: "http://koherent.org/pi/pi100.txt")!
+        /**/ let url1 = URL(string: "https://koherent.org/pi/pi10.txt")!
+        /**/ let url2 = URL(string: "https://koherent.org/pi/pi100.txt")!
         /**/ let file1 = (dir as NSString).appendingPathComponent("pi10.txt")
         /**/ let file2 = (dir as NSString).appendingPathComponent("pi100.txt")
         
@@ -52,8 +56,8 @@ class EasyDLTests: XCTestCase {
     }
     
     func testProgress() {
-        let url1 = URL(string: "http://koherent.org/pi/pi10.txt")!
-        let url2 = URL(string: "http://koherent.org/pi/pi100.txt")!
+        let url1 = URL(string: "https://koherent.org/pi/pi10.txt")!
+        let url2 = URL(string: "https://koherent.org/pi/pi100.txt")!
         let file1 = (dir as NSString).appendingPathComponent("pi10.txt")
         let file2 = (dir as NSString).appendingPathComponent("pi100.txt")
         
@@ -97,9 +101,9 @@ class EasyDLTests: XCTestCase {
     }
     
     func testCache() {
-        let url1 = URL(string: "http://koherent.org/pi/pi10.txt")!
-        let url2 = URL(string: "http://koherent.org/pi/pi100.txt")!
-        let url3 = URL(string: "http://koherent.org/pi/pi1000.txt")!
+        let url1 = URL(string: "https://koherent.org/pi/pi10.txt")!
+        let url2 = URL(string: "https://koherent.org/pi/pi100.txt")!
+        let url3 = URL(string: "https://koherent.org/pi/pi1000.txt")!
         let file1 = (dir as NSString).appendingPathComponent("pi10.txt")
         let file2 = (dir as NSString).appendingPathComponent("pi100.txt")
         let file3 = (dir as NSString).appendingPathComponent("pi1000.txt")
@@ -109,10 +113,21 @@ class EasyDLTests: XCTestCase {
         try? fileManager.removeItem(at: URL(fileURLWithPath: file2))
         try? fileManager.removeItem(at: URL(fileURLWithPath: file3))
         
-        for count in 0..<6 {
+        let range: Range<Int>
+        #if DEBUG
+        range = 0 ..< 6
+        #else
+        range = 0 ..< 5
+        #endif
+        for count in range {
             let downloader: Downloader
             switch count {
-            case 0, 1:
+            case 0:
+                typealias Item = Downloader.Item
+                let item1 = Item(url: url1, destination: file1)
+                let item2 = Item(url: url2, destination: file2, strategy: .ifNotCached) // tests downloading without cache with `.ifNotCached`
+                downloader = Downloader(items: [item1, item2], commonRequestHeaders: ["Accept-Encoding": "identity"])
+            case 1:
                 downloader = Downloader(items: [(url1, file1), (url2, file2)], commonRequestHeaders: ["Accept-Encoding": "identity"])
             case 2:
                 downloader = Downloader(items: [(url2, file2), (url3, file3)], commonRequestHeaders: ["Accept-Encoding": "identity"])
@@ -123,6 +138,7 @@ class EasyDLTests: XCTestCase {
                 let item1 = Item(url: url1, destination: file1)
                 let item2 = Item(url: url2, destination: file2, strategy: .always)
                 downloader = Downloader(items: [item1, item2], commonRequestHeaders: ["Accept-Encoding": "identity"])
+            #if DEBUG
             case 5:
                 typealias Item = Downloader.Item
                 let item1 = Item(url: url1, destination: file1)
@@ -130,6 +146,7 @@ class EasyDLTests: XCTestCase {
                 try! fileManager.setAttributes([.modificationDate: item1.modificationDate! - 1], ofItemAtPath: item1.destination)
                 try! fileManager.setAttributes([.modificationDate: item3.modificationDate! - 1], ofItemAtPath: item3.destination)
                 downloader = Downloader(items: [item1, item3], commonRequestHeaders: ["Accept-Encoding": "identity"])
+            #endif
             default:
                 fatalError("Never reaches here.")
             }
@@ -191,8 +208,8 @@ class EasyDLTests: XCTestCase {
     }
     
     func testCancel() {
-        let url1 = URL(string: "http://koherent.org/pi/pi100000.txt")!
-        let url2 = URL(string: "http://koherent.org/pi/pi1000000.txt")!
+        let url1 = URL(string: "https://koherent.org/pi/pi100000.txt")!
+        let url2 = URL(string: "https://koherent.org/pi/pi1000000.txt")!
         let file1 = (dir as NSString).appendingPathComponent("pi100000.txt")
         let file2 = (dir as NSString).appendingPathComponent("pi1000000.txt")
         
@@ -221,7 +238,7 @@ class EasyDLTests: XCTestCase {
         }
         
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
             print("cancel")
             downloader.cancel()
         }
@@ -233,8 +250,8 @@ class EasyDLTests: XCTestCase {
     }
 
     func testFailure() {
-        let url1 = URL(string: "http://koherent.org/pi/not-found.txt")!
-        let url2 = URL(string: "http://koherent.org/pi/pi100.txt")!
+        let url1 = URL(string: "https://koherent.org/pi/not-found.txt")!
+        let url2 = URL(string: "https://koherent.org/pi/pi100.txt")!
         let file1 = (dir as NSString).appendingPathComponent("pi10.txt")
         let file2 = (dir as NSString).appendingPathComponent("pi100.txt")
         
