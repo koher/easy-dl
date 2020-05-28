@@ -5,7 +5,7 @@ internal typealias IsCached = Bool
 public final class Downloader {
     public let items: [Item]
     public let needsPreciseProgress: Bool
-    public let commonStrategy: Strategy
+    public let commonCachePolicy: CachePolicy
     public let commonRequestHeaders: [String: String]?
     
     private var progressHandlers: [(Int64, Int64?, Int, Int64, Int64?) -> ()] = []
@@ -30,23 +30,23 @@ public final class Downloader {
     public convenience init(
         items: [Item],
         needsPreciseProgress: Bool = true,
-        commonStrategy: Strategy = .ifUpdated,
+        commonCachePolicy: CachePolicy = .useCacheIfUnchanged,
         commonRequestHeaders: [String: String]? = nil
     ) {
-        self.init(session: FoundationURLSession(), items: items, needsPreciseProgress: needsPreciseProgress, commonStrategy: commonStrategy, commonRequestHeaders: commonRequestHeaders)
+        self.init(session: FoundationURLSession(), items: items, needsPreciseProgress: needsPreciseProgress, commonCachePolicy: commonCachePolicy, commonRequestHeaders: commonRequestHeaders)
     }
 
     internal init(
         session: Session,
         items: [Item],
         needsPreciseProgress: Bool,
-        commonStrategy: Strategy,
+        commonCachePolicy: CachePolicy,
         commonRequestHeaders: [String: String]?
     ) {
         self.session = session
         self.items = items
         self.needsPreciseProgress = needsPreciseProgress
-        self.commonStrategy = commonStrategy
+        self.commonCachePolicy = commonCachePolicy
         self.commonRequestHeaders = commonRequestHeaders
         
         zelf = self
@@ -120,12 +120,12 @@ public final class Downloader {
         commonRequestHeaders?.forEach {
             headerFields[$0.0] = $0.1
         }
-        switch item.strategy ?? commonStrategy {
-        case .always:
+        switch item.cachePolicy ?? commonCachePolicy {
+        case .ignoreCache:
             break
-        case .ifUpdated:
+        case .useCacheIfUnchanged:
             modificationDate = item.modificationDate
-        case .ifNotCached:
+        case .preferCache:
             if item.fileExists {
                 callback(.success(0, [true]))
                 return
@@ -173,12 +173,12 @@ public final class Downloader {
         commonRequestHeaders?.forEach {
             headerFields[$0.0] = $0.1
         }
-        switch item.strategy ?? commonStrategy {
-        case .always:
+        switch item.cachePolicy ?? commonCachePolicy {
+        case .ignoreCache:
             break
-        case .ifUpdated:
+        case .useCacheIfUnchanged:
             modificationDate = item.modificationDate
-        case .ifNotCached:
+        case .preferCache:
             break
         }
 
@@ -295,19 +295,19 @@ public final class Downloader {
         }
     }
     
-    public enum Strategy {
-        case always, ifUpdated, ifNotCached
+    public enum CachePolicy {
+        case ignoreCache, useCacheIfUnchanged, preferCache
     }
     
     public struct Item {
         public var url: URL
         public var destination: String
-        public var strategy: Strategy?
+        public var cachePolicy: CachePolicy?
         
-        public init(url: URL, destination: String, strategy: Strategy? = nil) {
+        public init(url: URL, destination: String, cachePolicy: CachePolicy? = nil) {
             self.url = url
             self.destination = destination
-            self.strategy = strategy
+            self.cachePolicy = cachePolicy
         }
         
         internal var modificationDate: Date? {

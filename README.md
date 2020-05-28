@@ -23,20 +23,20 @@ downloader.completion { result in
 }
 ```
 
-## Flexible strategies
+## Flexible cache policies
 
-It is possible to choose download strategies for a `Downloader` and/or each `Item`.
+It is possible to choose cache policies for a `Downloader` and/or each `Item`.
 
 ```swift
-enum Strategy {
-    case always, ifUpdated, ifNotCached
+enum CachePolicy {
+    case ignoreCache, useCacheIfUnchanged, preferCache
 }
 ```
 
 ```swift
-let item1 = Item(url: url1, destination: file1) // `.ifUpdated` by default
-let item2 = Item(url: url2, destination: file2, strategy: .always)
-let item3 = Item(url: url3, destination: file3, strategy: .ifNotCached)
+let item1 = Item(url: url1, destination: file1) // `.useCacheIfUnchanged` by default
+let item2 = Item(url: url2, destination: file2, cachePolicy: .ignoreCache)
+let item3 = Item(url: url3, destination: file3, cachePolicy: .preferCache)
 
 let downloader = Downloader(items: [item1, item2, item3])
 ```

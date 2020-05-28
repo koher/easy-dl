@@ -4,13 +4,13 @@ extension Downloader {
     public convenience init(
         items: [(URL, String)],
         needsPreciseProgress: Bool = true,
-        commonStrategy: Strategy = .ifUpdated,
+        commonCachePolicy: CachePolicy = .useCacheIfUnchanged,
         commonRequestHeaders: [String: String]? = nil
     ) {
         self.init(
             items: items.map { Item(url: $0.0, destination: $0.1) },
             needsPreciseProgress: needsPreciseProgress,
-            commonStrategy: commonStrategy,
+            commonCachePolicy: commonCachePolicy,
             commonRequestHeaders: commonRequestHeaders
         )
     }
