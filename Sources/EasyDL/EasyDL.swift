@@ -5,8 +5,8 @@ internal typealias IsCached = Bool
 public final class Downloader {
     public let items: [Item]
     public let needsPreciseProgress: Bool
-    public let commonCachePolicy: CachePolicy
-    public let commonRequestHeaders: [String: String]?
+    public let cachePolicy: CachePolicy
+    public let requestHeaders: [String: String]?
     
     private var progressHandlers: [(Int64, Int64?, Int, Int64, Int64?) -> ()] = []
     private var completionHandlers: [(Result) -> ()] = []
@@ -30,24 +30,24 @@ public final class Downloader {
     public convenience init(
         items: [Item],
         needsPreciseProgress: Bool = true,
-        commonCachePolicy: CachePolicy = .useCacheIfUnchanged,
-        commonRequestHeaders: [String: String]? = nil
+        cachePolicy: CachePolicy = .useCacheIfUnchanged,
+        requestHeaders: [String: String]? = nil
     ) {
-        self.init(session: FoundationURLSession(), items: items, needsPreciseProgress: needsPreciseProgress, commonCachePolicy: commonCachePolicy, commonRequestHeaders: commonRequestHeaders)
+        self.init(session: FoundationURLSession(), items: items, needsPreciseProgress: needsPreciseProgress, cachePolicy: cachePolicy, requestHeaders: requestHeaders)
     }
 
     internal init(
         session: Session,
         items: [Item],
         needsPreciseProgress: Bool,
-        commonCachePolicy: CachePolicy,
-        commonRequestHeaders: [String: String]?
+        cachePolicy: CachePolicy,
+        requestHeaders: [String: String]?
     ) {
         self.session = session
         self.items = items
         self.needsPreciseProgress = needsPreciseProgress
-        self.commonCachePolicy = commonCachePolicy
-        self.commonRequestHeaders = commonRequestHeaders
+        self.cachePolicy = cachePolicy
+        self.requestHeaders = requestHeaders
         
         zelf = self
         
@@ -117,10 +117,10 @@ public final class Downloader {
         
         var modificationDate: Date?
         var headerFields: [String: String] = [:]
-        commonRequestHeaders?.forEach {
+        requestHeaders?.forEach {
             headerFields[$0.0] = $0.1
         }
-        switch item.cachePolicy ?? commonCachePolicy {
+        switch item.cachePolicy ?? cachePolicy {
         case .ignoreCache:
             break
         case .useCacheIfUnchanged:
@@ -170,10 +170,10 @@ public final class Downloader {
         
         var modificationDate: Date?
         var headerFields: [String: String] = [:]
-        commonRequestHeaders?.forEach {
+        requestHeaders?.forEach {
             headerFields[$0.0] = $0.1
         }
-        switch item.cachePolicy ?? commonCachePolicy {
+        switch item.cachePolicy ?? cachePolicy {
         case .ignoreCache:
             break
         case .useCacheIfUnchanged:
