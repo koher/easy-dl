@@ -72,10 +72,10 @@ downloader.progress { (
 Also precise progress or non-precise progress can be designated.
 
 ```swift
-let downloader = Downloader(items: [(url1, file1), (url2, file2)], needsPreciseProgress: false)
+let downloader = Downloader(items: [(url1, file1), (url2, file2)], expectsPreciseProgress: false)
 ```
 
-Usually, a `Downloader` gets sizes of the `Item`s by sending HEAD requests and summing up `Content-Length`s in the response headers before starting downloads. When `needsPreciseProgress` is `false`, a `Downloader` omits those HEAD request. Then `progress` for `Float?` calls a callback with pseudo progress, which is calculated on the assumption that all `Item`s has a same size. That is, the amout of the progress for one `Item` is `1.0 / Float(items.count)`.
+Usually, a `Downloader` gets sizes of the `Item`s by sending HEAD requests and summing up `Content-Length`s in the response headers before starting downloads. When `expectsPreciseProgress` is `false`, a `Downloader` omits those HEAD request. Then `progress` for `Float?` calls a callback with pseudo progress, which is calculated on the assumption that all `Item`s has a same size. That is, the amout of the progress for one `Item` is `1.0 / Float(items.count)`.
 
 ## License
 

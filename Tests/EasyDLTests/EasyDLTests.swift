@@ -65,7 +65,7 @@ class EasyDLTests: XCTestCase {
         try? fileManager.removeItem(at: URL(fileURLWithPath: file1))
         try? fileManager.removeItem(at: URL(fileURLWithPath: file2))
         
-        let downloader = Downloader(items: [(url1, file1), (url2, file2)], needsPreciseProgress: false)
+        let downloader = Downloader(items: [(url1, file1), (url2, file2)], expectsPreciseProgress: false)
         
         let expectation = self.expectation(description: "")
         

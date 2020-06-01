@@ -3,13 +3,13 @@ import Foundation
 extension Downloader {
     public convenience init(
         items: [(URL, String)],
-        needsPreciseProgress: Bool = true,
+        expectsPreciseProgress: Bool = true,
         cachePolicy: CachePolicy = .useCacheIfUnchanged,
         requestHeaders: [String: String]? = nil
     ) {
         self.init(
             items: items.map { Item(url: $0.0, destination: $0.1) },
-            needsPreciseProgress: needsPreciseProgress,
+            expectsPreciseProgress: expectsPreciseProgress,
             cachePolicy: cachePolicy,
             requestHeaders: requestHeaders
         )

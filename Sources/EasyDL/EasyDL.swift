@@ -4,7 +4,7 @@ internal typealias IsCached = Bool
 
 public final class Downloader {
     public let items: [Item]
-    public let needsPreciseProgress: Bool
+    public let expectsPreciseProgress: Bool
     public let cachePolicy: CachePolicy
     public let requestHeaders: [String: String]?
     
@@ -29,23 +29,23 @@ public final class Downloader {
     
     public convenience init(
         items: [Item],
-        needsPreciseProgress: Bool = true,
+        expectsPreciseProgress: Bool = true,
         cachePolicy: CachePolicy = .useCacheIfUnchanged,
         requestHeaders: [String: String]? = nil
     ) {
-        self.init(session: FoundationURLSession(), items: items, needsPreciseProgress: needsPreciseProgress, cachePolicy: cachePolicy, requestHeaders: requestHeaders)
+        self.init(session: FoundationURLSession(), items: items, expectsPreciseProgress: expectsPreciseProgress, cachePolicy: cachePolicy, requestHeaders: requestHeaders)
     }
 
     internal init(
         session: Session,
         items: [Item],
-        needsPreciseProgress: Bool,
+        expectsPreciseProgress: Bool,
         cachePolicy: CachePolicy,
         requestHeaders: [String: String]?
     ) {
         self.session = session
         self.items = items
-        self.needsPreciseProgress = needsPreciseProgress
+        self.expectsPreciseProgress = expectsPreciseProgress
         self.cachePolicy = cachePolicy
         self.requestHeaders = requestHeaders
         
@@ -56,7 +56,7 @@ public final class Downloader {
             self.download(ArraySlice(zip(items, isCached)), self.complete(with:))
         }
 
-        if needsPreciseProgress {
+        if expectsPreciseProgress {
             contentLength(of: items[...]) { result in
                 switch result {
                 case .cancel:
