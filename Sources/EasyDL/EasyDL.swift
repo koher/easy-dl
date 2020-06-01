@@ -258,7 +258,7 @@ public final class Downloader {
         }
     }
     
-    internal func progress(_ handler: @escaping (Progress) -> Void) {
+    public func progress(_ handler: @escaping (Progress) -> Void) {
         DispatchQueue.main.async {
             if let bytesDownloaded = self.bytesDownloaded {
                 handler(Progress(
@@ -288,7 +288,7 @@ public final class Downloader {
             _ bytesExpectedToDownloadForItem: Int?
         ) -> ()
     ) {
-        progress { (progress: Progress) in
+        progress { progress in
             handler(
                 progress.bytesDownloaded,
                 progress.bytesExpectedToDownload,
@@ -310,7 +310,7 @@ public final class Downloader {
         }
     }
     
-    internal struct Progress {
+    public struct Progress {
         public let bytesDownloaded: Int
         public let bytesExpectedToDownload: Int?
         public let itemIndex: Int

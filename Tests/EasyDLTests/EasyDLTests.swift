@@ -70,7 +70,7 @@ class EasyDLTests: XCTestCase {
         let expectation = self.expectation(description: "")
         
         var progressSet: Set<String> = []
-        downloader.progress { (rate: Float?) in
+        downloader.progressRate { (rate: Float?) in
             print("\(rate!) / 1.0")
             progressSet.insert("\(rate!) / 1.0")
         }

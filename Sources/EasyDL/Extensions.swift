@@ -26,8 +26,8 @@ extension Downloader {
         }
     }
     
-    public func progress(_ handler: @escaping (Float) -> ()) {
-        progress { (progress: Progress) in
+    public func progressRate(_ handler: @escaping (Float) -> ()) {
+        progress { progress in
             handler(progress.rate)
         }
     }
