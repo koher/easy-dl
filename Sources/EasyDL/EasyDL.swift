@@ -228,6 +228,7 @@ public final class Downloader {
                 bytesDownloaded: self.bytesDownloaded,
                 bytesExpectedToDownload: self.bytesExpectedToDownload,
                 itemIndex: self.currentItemIndex,
+                numberOfItems: self.items.count,
                 bytesDownloadedForItem: totalBytesDownloadedForItem,
                 bytesExpectedToDownloadForItem: totalBytesExpectedToDownloadForItem
             ))
@@ -264,6 +265,7 @@ public final class Downloader {
                     bytesDownloaded: bytesDownloaded,
                     bytesExpectedToDownload: self.bytesExpectedToDownload,
                     itemIndex: self.items.count,
+                    numberOfItems: self.items.count,
                     bytesDownloadedForItem: self.bytesDownloadedForItem,
                     bytesExpectedToDownloadForItem: self.bytesExpectedToDownloadForItem
                 ))
@@ -312,15 +314,27 @@ public final class Downloader {
         public let bytesDownloaded: Int
         public let bytesExpectedToDownload: Int?
         public let itemIndex: Int
+        public let numberOfItems: Int
         public let bytesDownloadedForItem: Int
         public let bytesExpectedToDownloadForItem: Int?
 
-        internal init(bytesDownloaded: Int, bytesExpectedToDownload: Int?, itemIndex: Int, bytesDownloadedForItem: Int, bytesExpectedToDownloadForItem: Int?) {
+        internal init(bytesDownloaded: Int, bytesExpectedToDownload: Int?, itemIndex: Int, numberOfItems: Int, bytesDownloadedForItem: Int, bytesExpectedToDownloadForItem: Int?) {
             self.bytesDownloaded = bytesDownloaded
             self.bytesExpectedToDownload = bytesExpectedToDownload
             self.itemIndex = itemIndex
+            self.numberOfItems = numberOfItems
             self.bytesDownloadedForItem = bytesDownloadedForItem
             self.bytesExpectedToDownloadForItem = bytesExpectedToDownloadForItem
+        }
+        
+        public var rate: Float {
+            if let exptected = bytesExpectedToDownload {
+                return Float(bytesDownloaded) / Float(exptected)
+            } else if let exptected = bytesExpectedToDownloadForItem {
+                return (Float(itemIndex) + Float(Double(bytesDownloadedForItem) / Double(exptected))) / Float(numberOfItems)
+            } else {
+                return Float(itemIndex) / Float(numberOfItems)
+            }
         }
     }
     
