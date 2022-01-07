@@ -15,7 +15,6 @@ internal final class Session {
     
     enum Result {
         case success((location: URL, modificationDate: Date?)?)
-        case cancel
         case failure(Error)
     }
     
@@ -111,7 +110,7 @@ internal final class Session {
             let handler = object.currentResultHandler!
 
             if object.isCancelled {
-                handler(.cancel)
+                handler(.failure(CancellationError()))
                 return
             }
             

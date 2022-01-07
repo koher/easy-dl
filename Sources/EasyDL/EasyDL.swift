@@ -210,8 +210,6 @@ public final class Downloader {
                 }
             case .success(.none):
                 callback(.success(()))
-            case .cancel:
-                callback(.failure(CancellationError()))
             case .failure(let error):
                 callback(.failure(error))
             }
