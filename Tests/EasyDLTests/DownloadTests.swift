@@ -47,25 +47,20 @@ final class DownloadTests: XCTestCase {
         let url2 = URL(string: "https://koherent.org/pi/pi1000000.txt")!
         let file1 = testDirectoryURL.appendingPathComponent("pi100000.txt").path
         let file2 = testDirectoryURL.appendingPathComponent("pi1000000.txt").path
-        
-        do {
-            async let x: Void = download(items: [(url1, file1), (url2, file2)], requestHeaders: ["Accept-Encoding": "identity"], progressHandler: { bytesDownloaded, bytesExpectedToDownload in
-                print("\(bytesDownloaded) / \(bytesExpectedToDownload!)")
-            })
-            
-            withUnsafeCurrentTask { task in
-                _ = Task.detached {
-                    print(Thread.current, Thread.main, Thread.isMainThread)
-                    try await Task.sleep(nanoseconds: 10_000_000) // 10ms
-                    task!.cancel()
-                }
+
+        let task = Task {
+            do {
+                try await download(items: [(url1, file1), (url2, file2)], requestHeaders: ["Accept-Encoding": "identity"], progressHandler: { bytesDownloaded, bytesExpectedToDownload in
+                    print("\(bytesDownloaded) / \(bytesExpectedToDownload!)")
+                })
+                XCTFail()
+            } catch is CancellationError {
+                // OK
             }
-            
-            try await x
-            
-            XCTFail()
-        } catch is CancellationError {
-            // OK
         }
+
+        try await Task.sleep(nanoseconds: 10_000_000) // 10ms
+        task.cancel()
+        _ = try await task.value
     }
 }
