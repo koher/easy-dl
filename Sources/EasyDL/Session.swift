@@ -13,16 +13,11 @@ internal final class Session {
         var totalBytesExpectedToDownload: Int?
     }
     
-    enum Result {
-        case success((location: URL, modificationDate: Date?)?)
-        case failure(Error)
-    }
-    
     private var session: URLSession! = nil
     private var currentTask: URLSessionTask? = nil
     
     private var currentProgressHandler: ((Progress) -> Void)? = nil
-    private var currentResultHandler: ((Result) -> Void)? = nil
+    private var currentResultHandler: ((Result<(location: URL, modificationDate: Date?)?, Error>) -> Void)? = nil
     
     private var isCancelled = false
     
@@ -73,7 +68,7 @@ internal final class Session {
     func downloadWith(
         _ request: Request,
         progressHandler: @escaping (Progress) -> Void,
-        resultHandler: @escaping (Result) -> Void
+        resultHandler: @escaping (Result<(location: URL, modificationDate: Date?)?, Error>) -> Void
     ) {
         currentProgressHandler = progressHandler
         currentResultHandler = resultHandler
