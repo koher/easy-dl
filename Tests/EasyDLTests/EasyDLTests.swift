@@ -7,14 +7,25 @@ import EasyDL
 
 import Foundation
 
-internal let dir: String = #file.deletingLastPathComponent.deletingLastPathComponent.appendingPathComponent("TestDirectory")
+internal let testDirectoryURL: URL = .init(fileURLWithPath:  #file.deletingLastPathComponent.deletingLastPathComponent.appendingPathComponent("TemporaryTestDirectory"))
 
 class EasyDLTests: XCTestCase {
+    override class func setUp() {
+        let fileManager: FileManager = .default
+        try? fileManager.removeItem(at: testDirectoryURL)
+        try? fileManager.createDirectory(at: testDirectoryURL, withIntermediateDirectories: true, attributes: nil)
+    }
+    
+    override class func tearDown() {
+        let fileManager: FileManager = .default
+        try? fileManager.removeItem(at: testDirectoryURL)
+    }
+    
     func testExample() {
         /**/ let url1 = URL(string: "https://koherent.org/pi/pi10.txt")!
         /**/ let url2 = URL(string: "https://koherent.org/pi/pi100.txt")!
-        /**/ let file1 = (dir as NSString).appendingPathComponent("pi10.txt")
-        /**/ let file2 = (dir as NSString).appendingPathComponent("pi100.txt")
+        /**/ let file1 = testDirectoryURL.appendingPathComponent("pi10.txt").path
+        /**/ let file2 = testDirectoryURL.appendingPathComponent("pi100.txt").path
         
         /**/ let fileManager = FileManager.default
         /**/ try? fileManager.removeItem(at: URL(fileURLWithPath: file1))
@@ -56,8 +67,8 @@ class EasyDLTests: XCTestCase {
     func testProgress() {
         let url1 = URL(string: "https://koherent.org/pi/pi10.txt")!
         let url2 = URL(string: "https://koherent.org/pi/pi100.txt")!
-        let file1 = (dir as NSString).appendingPathComponent("pi10.txt")
-        let file2 = (dir as NSString).appendingPathComponent("pi100.txt")
+        let file1 = testDirectoryURL.appendingPathComponent("pi10.txt").path
+        let file2 = testDirectoryURL.appendingPathComponent("pi100.txt").path
         
         let fileManager = FileManager.default
         try? fileManager.removeItem(at: URL(fileURLWithPath: file1))
@@ -100,9 +111,9 @@ class EasyDLTests: XCTestCase {
         let url1 = URL(string: "https://koherent.org/pi/pi10.txt")!
         let url2 = URL(string: "https://koherent.org/pi/pi100.txt")!
         let url3 = URL(string: "https://koherent.org/pi/pi1000.txt")!
-        let file1 = (dir as NSString).appendingPathComponent("pi10.txt")
-        let file2 = (dir as NSString).appendingPathComponent("pi100.txt")
-        let file3 = (dir as NSString).appendingPathComponent("pi1000.txt")
+        let file1 = testDirectoryURL.appendingPathComponent("pi10.txt").path
+        let file2 = testDirectoryURL.appendingPathComponent("pi100.txt").path
+        let file3 = testDirectoryURL.appendingPathComponent("pi1000.txt").path
         
         let fileManager = FileManager.default
         try? fileManager.removeItem(at: URL(fileURLWithPath: file1))
@@ -206,8 +217,8 @@ class EasyDLTests: XCTestCase {
     func testCancel() {
         let url1 = URL(string: "https://koherent.org/pi/pi100000.txt")!
         let url2 = URL(string: "https://koherent.org/pi/pi1000000.txt")!
-        let file1 = (dir as NSString).appendingPathComponent("pi100000.txt")
-        let file2 = (dir as NSString).appendingPathComponent("pi1000000.txt")
+        let file1 = testDirectoryURL.appendingPathComponent("pi100000.txt").path
+        let file2 = testDirectoryURL.appendingPathComponent("pi1000000.txt").path
         
         let fileManager = FileManager.default
         try? fileManager.removeItem(at: URL(fileURLWithPath: file1))
@@ -249,8 +260,8 @@ class EasyDLTests: XCTestCase {
     func testFailure() {
         let url1 = URL(string: "https://koherent.org/pi/not-found.txt")!
         let url2 = URL(string: "https://koherent.org/pi/pi100.txt")!
-        let file1 = (dir as NSString).appendingPathComponent("pi10.txt")
-        let file2 = (dir as NSString).appendingPathComponent("pi100.txt")
+        let file1 = testDirectoryURL.appendingPathComponent("pi10.txt").path
+        let file2 = testDirectoryURL.appendingPathComponent("pi100.txt").path
         
         let fileManager = FileManager.default
         try? fileManager.removeItem(at: URL(fileURLWithPath: file1))

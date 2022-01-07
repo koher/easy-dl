@@ -2,24 +2,22 @@ import XCTest
 import EasyDL
 
 final class DownloadTests: XCTestCase {
-    private static var directoryURL: URL { URL(fileURLWithPath: dir) }
-    
     override class func setUp() {
         let fileManager: FileManager = .default
-        try? fileManager.removeItem(at: directoryURL)
-        try? fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true, attributes: nil)
+        try? fileManager.removeItem(at: testDirectoryURL)
+        try? fileManager.createDirectory(at: testDirectoryURL, withIntermediateDirectories: true, attributes: nil)
     }
     
     override class func tearDown() {
         let fileManager: FileManager = .default
-        try? fileManager.removeItem(at: directoryURL)
+        try? fileManager.removeItem(at: testDirectoryURL)
     }
     
     func testSuccess() async throws {
         let url1 = URL(string: "https://koherent.org/pi/pi10.txt")!
         let url2 = URL(string: "https://koherent.org/pi/pi100.txt")!
-        let file1 = Self.directoryURL.appendingPathComponent("pi10.txt").path
-        let file2 = Self.directoryURL.appendingPathComponent("pi100.txt").path
+        let file1 = testDirectoryURL.appendingPathComponent("pi10.txt").path
+        let file2 = testDirectoryURL.appendingPathComponent("pi100.txt").path
         
         try await download(items: [(url1, file1), (url2, file2)])
         
@@ -33,8 +31,8 @@ final class DownloadTests: XCTestCase {
     func testFailure() async throws {
         let url1 = URL(string: "https://koherent.org/pi/not-found.txt")!
         let url2 = URL(string: "https://koherent.org/pi/pi100.txt")!
-        let file1 = Self.directoryURL.appendingPathComponent("pi10.txt").path
-        let file2 = Self.directoryURL.appendingPathComponent("pi100.txt").path
+        let file1 = testDirectoryURL.appendingPathComponent("pi10.txt").path
+        let file2 = testDirectoryURL.appendingPathComponent("pi100.txt").path
 
         do {
             try await download(items: [(url1, file1), (url2, file2)])
@@ -47,8 +45,8 @@ final class DownloadTests: XCTestCase {
     func testCancel() async throws {
         let url1 = URL(string: "https://koherent.org/pi/pi100000.txt")!
         let url2 = URL(string: "https://koherent.org/pi/pi1000000.txt")!
-        let file1 = Self.directoryURL.appendingPathComponent("pi100000.txt").path
-        let file2 = Self.directoryURL.appendingPathComponent("pi1000000.txt").path
+        let file1 = testDirectoryURL.appendingPathComponent("pi100000.txt").path
+        let file2 = testDirectoryURL.appendingPathComponent("pi1000000.txt").path
         
         do {
             async let x: Void = download(items: [(url1, file1), (url2, file2)], requestHeaders: ["Accept-Encoding": "identity"], progressHandler: { bytesDownloaded, bytesExpectedToDownload in
