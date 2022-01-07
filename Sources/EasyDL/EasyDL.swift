@@ -18,7 +18,6 @@ public final class Downloader {
     private var result: Result<Void, Error>? = nil
     
     private let urlSession: URLSession
-    private var zelf: Downloader? // To prevent releasing this instance during downloading
 
     private var currentItemIndex: Int = 0
     private var currentTask: URLSessionTask? = nil
@@ -41,8 +40,6 @@ public final class Downloader {
         
         urlSessionDelegate.object = self
 
-        zelf = self
-        
         @Sendable func download(_ isCached: [IsCached]) async {
             assert(items.count == isCached.count) // Always true for `Downloader` without bugs
             do {
@@ -236,8 +233,6 @@ public final class Downloader {
         
         progressHandlers.removeAll()
         completionHandlers.removeAll()
-        
-        zelf = nil
     }
     
     public func cancel() {
