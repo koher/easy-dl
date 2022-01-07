@@ -43,23 +43,28 @@ public final class Downloader {
 
         zelf = self
         
-        @Sendable func download(_ isCached: [IsCached]) {
+        @Sendable func download(_ isCached: [IsCached]) async {
             assert(items.count == isCached.count) // Always true for `Downloader` without bugs
-            self.download(ArraySlice(zip(items, isCached)), self.complete(with:))
+            do {
+                try await self.download(ArraySlice(zip(items, isCached)))
+                complete(with: .success(()))
+            } catch {
+                complete(with: .failure(error))
+            }
         }
 
-        if expectsPreciseProgress {
-            Task {
+        Task {
+            if expectsPreciseProgress {
                 do {
                     let (length, isCached) = try await contentLength(of: items[...])
                     self.bytesExpectedToDownload = length
-                    download(isCached)
+                    await download(isCached)
                 } catch {
                     self.complete(with: .failure(error))
                 }
+            } else {
+                await download([IsCached](repeating: false, count: items.count))
             }
-        } else {
-            download([IsCached](repeating: false, count: items.count))
         }
     }
     
@@ -141,33 +146,23 @@ public final class Downloader {
         }
     }
     
-    private func download(_ items: ArraySlice<(Item, IsCached)>, _ callback: @escaping (Result<Void, Error>) -> ()) {
+    private func download(_ items: ArraySlice<(Item, IsCached)>) async throws {
         currentItemIndex = items.startIndex
         
-        guard let first = items.first else {
-            callback(.success(()))
+        guard let (item, isCached) = items.first else {
             return
         }
         
-        let (item, isCached) = first
-        download(item, isCached) { result in
-            switch result {
-            case .failure:
-                callback(result)
-            case .success:
-                self.download(items[(items.startIndex + 1)...], callback)
-            }
-        }
+        try await download(item, isCached)
+        try await download(items[(items.startIndex + 1)...])
     }
     
-    private func download(_ item: Item, _ isCached: IsCached, _ callback: @escaping (Result<Void, Error>) -> ()) {
+    private func download(_ item: Item, _ isCached: IsCached) async throws {
         if isCancelled {
-            callback(.failure(CancellationError()))
-            return
+            throw CancellationError()
         }
         
         if isCached {
-            callback(.success(()))
             return
         }
         
@@ -188,30 +183,32 @@ public final class Downloader {
         var urlRequest = URLRequest(url: item.url)
         urlRequest.setHeaderFields(headerFields, with: modificationDate)
 
-        currentResultHandler = { result in
-            switch result {
-            case .success((location: let location, modificationDate: let modificationDate)?):
-                let fileManager = FileManager.default
-                try? fileManager.removeItem(atPath: item.destination) // OK though it fails if the file does not exists
-                do {
-                    try fileManager.moveItem(at: location, to: URL(fileURLWithPath: item.destination))
-                    if let modificationDate = modificationDate {
-                        try fileManager.setAttributes([.modificationDate: modificationDate], ofItemAtPath: item.destination)
+        return try await withCheckedThrowingContinuation { continuation in
+            currentResultHandler = { result in
+                switch result {
+                case .success((location: let location, modificationDate: let modificationDate)?):
+                    let fileManager = FileManager.default
+                    try? fileManager.removeItem(atPath: item.destination) // OK though it fails if the file does not exists
+                    do {
+                        try fileManager.moveItem(at: location, to: URL(fileURLWithPath: item.destination))
+                        if let modificationDate = modificationDate {
+                            try fileManager.setAttributes([.modificationDate: modificationDate], ofItemAtPath: item.destination)
+                        }
+                        continuation.resume()
+                    } catch let error {
+                        continuation.resume(throwing: error)
                     }
-                    callback(.success(()))
-                } catch let error {
-                    callback(.failure(error))
+                case .success(.none):
+                    continuation.resume()
+                case .failure(let error):
+                    continuation.resume(throwing: error)
                 }
-            case .success(.none):
-                callback(.success(()))
-            case .failure(let error):
-                callback(.failure(error))
             }
+            
+            let task = urlSession.downloadTask(with: urlRequest)
+            currentTask = task
+            task.resume()
         }
-        
-        let task = urlSession.downloadTask(with: urlRequest)
-        currentTask = task
-        task.resume()
     }
     
     private func makeProgress(bytesDownloaded: Int, totalBytesDownloadedForItem: Int, totalBytesExpectedToDownloadForItem: Int?) {
