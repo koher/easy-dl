@@ -2,19 +2,23 @@ import XCTest
 import EasyDL
 import Foundation
 
-internal let testDirectoryURL: URL = .init(fileURLWithPath:  #file.deletingLastPathComponent.deletingLastPathComponent.appendingPathComponent("TemporaryTestDirectory"))
+internal let testDirectoryURL: URL = .init(fileURLWithPath:  #file.deletingLastPathComponent.deletingLastPathComponent.deletingLastPathComponent.appendingPathComponent("TemporaryTestDirectory"))
 
 @MainActor
 final class EasyDLTests: XCTestCase {
-    override class func setUp() {
+    override func setUp() async throws {
         let fileManager: FileManager = .default
-        try? fileManager.removeItem(at: testDirectoryURL)
-        try? fileManager.createDirectory(at: testDirectoryURL, withIntermediateDirectories: true, attributes: nil)
+        if fileManager.fileExists(atPath: testDirectoryURL.path) {
+            try fileManager.removeItem(at: testDirectoryURL)
+        }
+        try fileManager.createDirectory(at: testDirectoryURL, withIntermediateDirectories: true, attributes: nil)
     }
     
-    override class func tearDown() {
+    override func tearDown() async throws {
         let fileManager: FileManager = .default
-        try? fileManager.removeItem(at: testDirectoryURL)
+        if fileManager.fileExists(atPath: testDirectoryURL.path) {
+            try fileManager.removeItem(at: testDirectoryURL)
+        }
     }
     
     func testExample() async throws {
@@ -24,7 +28,7 @@ final class EasyDLTests: XCTestCase {
         /**/ let file2 = testDirectoryURL.appendingPathComponent("pi100.txt").path
         
         /**/ var progressSet: Set<String> = []
-        try await download(items: [(url1, file1), (url2, file2)]/**/, cachePolicy: .reloadIgnoringLocalCacheData, requestHeaders: ["Accept-Encoding": "identity"]/**/) { bytesDownloaded, bytesExpectedToDownload in
+        try await download(items: [(url1, file1), (url2, file2)]/**/, requestHeaders: ["Accept-Encoding": "identity"]/**/) { bytesDownloaded, bytesExpectedToDownload in
             print("\(bytesDownloaded) / \(bytesExpectedToDownload!)")
             /**/ progressSet.insert("\(bytesDownloaded) / \(bytesExpectedToDownload!)")
         }

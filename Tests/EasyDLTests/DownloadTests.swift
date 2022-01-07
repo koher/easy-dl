@@ -3,15 +3,19 @@ import EasyDL
 
 @MainActor
 final class DownloadTests: XCTestCase {
-    override class func setUp() {
+    override func setUp() async throws {
         let fileManager: FileManager = .default
-        try? fileManager.removeItem(at: testDirectoryURL)
-        try? fileManager.createDirectory(at: testDirectoryURL, withIntermediateDirectories: true, attributes: nil)
+        if fileManager.fileExists(atPath: testDirectoryURL.path) {
+            try fileManager.removeItem(at: testDirectoryURL)
+        }
+        try fileManager.createDirectory(at: testDirectoryURL, withIntermediateDirectories: true, attributes: nil)
     }
     
-    override class func tearDown() {
+    override func tearDown() async throws {
         let fileManager: FileManager = .default
-        try? fileManager.removeItem(at: testDirectoryURL)
+        if fileManager.fileExists(atPath: testDirectoryURL.path) {
+            try fileManager.removeItem(at: testDirectoryURL)
+        }
     }
     
     func testSuccess() async throws {
