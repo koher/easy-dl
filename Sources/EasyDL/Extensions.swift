@@ -18,6 +18,26 @@ extension Downloader {
     public func progress(
         _ handler: @escaping (
             _ bytesDownloaded: Int,
+            _ bytesExpectedToDownload: Int?,
+            _ itemIndex: Int,
+            _ bytesDownloadedForItem: Int,
+            _ bytesExpectedToDownloadForItem: Int?
+        ) -> ()
+    ) {
+        progress { progress in
+            handler(
+                progress.bytesDownloaded,
+                progress.bytesExpectedToDownload,
+                progress.itemIndex,
+                progress.bytesDownloadedForItem,
+                progress.bytesExpectedToDownloadForItem
+            )
+        }
+    }
+    
+    public func progress(
+        _ handler: @escaping (
+            _ bytesDownloaded: Int,
             _ bytesExpectedToDownload: Int?
         ) -> ()
     ) {

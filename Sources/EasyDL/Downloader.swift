@@ -255,27 +255,7 @@ public final class Downloader {
         self.progressHandlers.append(handler)
     }
     
-    public func progress(
-        _ handler: @escaping (
-            _ bytesDownloaded: Int,
-            _ bytesExpectedToDownload: Int?,
-            _ itemIndex: Int,
-            _ bytesDownloadedForItem: Int,
-            _ bytesExpectedToDownloadForItem: Int?
-        ) -> ()
-    ) {
-        progress { progress in
-            handler(
-                progress.bytesDownloaded,
-                progress.bytesExpectedToDownload,
-                progress.itemIndex,
-                progress.bytesDownloadedForItem,
-                progress.bytesExpectedToDownloadForItem
-            )
-        }
-    }
-    
-    public func completion(_ handler: @escaping (Result<Void, Error>) -> ()) {
+   public func completion(_ handler: @escaping (Result<Void, Error>) -> ()) {
         if let result = self.result {
             handler(result)
             return
