@@ -23,7 +23,6 @@ public final class Downloader {
     private var currentItemIndex: Int = 0
     private var currentItem: Item! = nil
     private var currentCallback: ((Result<Void, Error>) -> ())? = nil
-    private var currentTask: URLSessionTask? = nil
     
     private var isCancelled: Bool = false
     
@@ -238,6 +237,8 @@ public final class Downloader {
     }
     
     private func complete(with result: Result<Void, Error>) {
+        guard self.result == nil else { return }
+        
         completionHandlers.forEach {
             $0(result)
         }
@@ -256,7 +257,8 @@ public final class Downloader {
             if self.isCancelled { return }
             
             self.isCancelled = true
-            self.currentTask?.cancel()
+            self.complete(with: .failure(CancellationError()))
+            self.session.cancel()
         }
     }
     
