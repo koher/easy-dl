@@ -17,37 +17,30 @@ public final class Downloader {
     private var bytesExpectedToDownloadForItem: Int? = nil
     private var result: Result<Void, Error>? = nil
     
-    private var session: Session
+    private let urlSession: URLSession
     private var zelf: Downloader? // To prevent releasing this instance during downloading
 
     private var currentItemIndex: Int = 0
-    private var currentItem: Item! = nil
-    private var currentCallback: ((Result<Void, Error>) -> ())? = nil
-    
+    private var currentTask: URLSessionTask? = nil
+    private var currentResultHandler: ((Result<(location: URL, modificationDate: Date?)?, Error>) -> Void)? = nil
+
     private var isCancelled: Bool = false
     
-    public convenience init(
+    public init(
         items: [Item],
         expectsPreciseProgress: Bool = true,
         cachePolicy: CachePolicy = .returnCacheDataIfUnmodifiedElseLoad,
         requestHeaders: [String: String]? = nil
     ) {
-        self.init(session: FoundationURLSession(), items: items, expectsPreciseProgress: expectsPreciseProgress, cachePolicy: cachePolicy, requestHeaders: requestHeaders)
-    }
-
-    internal init(
-        session: Session,
-        items: [Item],
-        expectsPreciseProgress: Bool,
-        cachePolicy: CachePolicy,
-        requestHeaders: [String: String]?
-    ) {
-        self.session = session
+        let urlSessionDelegate = URLSessionDelegateObject()
+        self.urlSession = URLSession(configuration: .default, delegate: urlSessionDelegate, delegateQueue: .main)
         self.items = items
         self.expectsPreciseProgress = expectsPreciseProgress
         self.cachePolicy = cachePolicy
         self.requestHeaders = requestHeaders
         
+        urlSessionDelegate.object = self
+
         zelf = self
         
         func download(_ isCached: [IsCached]) {
@@ -131,8 +124,36 @@ public final class Downloader {
                 return
             }
         }
-        let request = Session.Request(url: item.url, modificationDate: modificationDate, headerFields: headerFields)
-        session.contentLengthWith(request, callback)
+        
+        var urlRequest = URLRequest(url: item.url)
+        urlRequest.httpMethod = "HEAD"
+        urlRequest.setHeaderFields(headerFields, with: modificationDate)
+        let task = urlSession.dataTask(with: urlRequest) { _, urlResponse, error in
+            if let error = error {
+                callback(.failure(error))
+                return
+            }
+            
+            guard let urlResponse = urlResponse as? HTTPURLResponse else {
+                callback(.success(nil, [false]))
+                return
+            }
+            
+            if urlResponse.statusCode == 304 {
+                callback(.success(0, [true]))
+                return
+            }
+            
+            let contentLength = urlResponse.expectedContentLength
+            if contentLength == -1 { // `-1` because no `NSURLResponseUnknownLength` in Swift
+                callback(.success(nil, [false]))
+                return
+            }
+            
+            callback(.success(Int(contentLength), [false]))
+        }
+        self.currentTask = task
+        task.resume()
     }
     
     private func download(_ items: ArraySlice<(Item, IsCached)>, _ callback: @escaping (Result<Void, Error>) -> ()) {
@@ -165,9 +186,6 @@ public final class Downloader {
             return
         }
         
-        currentItem = item
-        currentCallback = callback
-        
         var modificationDate: Date?
         var headerFields: [String: String] = [:]
         requestHeaders?.forEach {
@@ -182,19 +200,11 @@ public final class Downloader {
 :
             break
         }
+        
+        var urlRequest = URLRequest(url: item.url)
+        urlRequest.setHeaderFields(headerFields, with: modificationDate)
 
-        let request = Session.Request(url: item.url, modificationDate: modificationDate, headerFields: headerFields)
-        session.downloadWith(request, progressHandler: { [weak self] progress in
-            guard let self = self else { return }
-            
-            self.bytesDownloadedForItem = progress.totalBytesDownloaded
-            self.bytesExpectedToDownloadForItem = progress.totalBytesExpectedToDownload
-            self.makeProgress(
-                bytesDownloaded: progress.bytesDownloaded,
-                totalBytesDownloadedForItem: progress.totalBytesDownloaded,
-                totalBytesExpectedToDownloadForItem: progress.totalBytesExpectedToDownload
-            )
-        }, resultHandler: { result in
+        currentResultHandler = { result in
             switch result {
             case .success((location: let location, modificationDate: let modificationDate)?):
                 let fileManager = FileManager.default
@@ -210,12 +220,14 @@ public final class Downloader {
                 }
             case .success(.none):
                 callback(.success(()))
-            case .cancel:
-                callback(.failure(CancellationError()))
             case .failure(let error):
                 callback(.failure(error))
             }
-        })
+        }
+        
+        let task = urlSession.downloadTask(with: urlRequest)
+        currentTask = task
+        task.resume()
     }
     
     private func makeProgress(bytesDownloaded: Int, totalBytesDownloadedForItem: Int, totalBytesExpectedToDownloadForItem: Int?) {
@@ -248,7 +260,7 @@ public final class Downloader {
         progressHandlers.removeAll()
         completionHandlers.removeAll()
         
-        session.complete()
+        urlSession.finishTasksAndInvalidate()
         zelf = nil
     }
     
@@ -258,7 +270,7 @@ public final class Downloader {
             
             self.isCancelled = true
             self.complete(with: .failure(CancellationError()))
-            self.session.cancel()
+            self.currentTask?.cancel()
         }
     }
     
@@ -376,5 +388,79 @@ public final class Downloader {
         case success(Int?, [IsCached])
         case cancel
         case failure(Error)
+    }
+}
+
+extension Downloader {
+    private final class URLSessionDelegateObject: NSObject, URLSessionDelegate, URLSessionTaskDelegate, URLSessionDownloadDelegate {
+        var object: Downloader!
+        
+        func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+            let handler = object.currentResultHandler!
+
+            if object.isCancelled {
+                handler(.failure(CancellationError()))
+                return
+            }
+            
+            if let error = error {
+                handler(.failure(error))
+            }
+        }
+        
+        func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
+            let handler = object.currentResultHandler!
+
+            let response = (downloadTask.response as? HTTPURLResponse)!
+            if response.statusCode == 304 {
+                handler(.success(nil))
+                return
+            }
+            guard response.statusCode == 200 else {
+                handler(.failure(Downloader.ResponseError(response: response)))
+                return
+            }
+            
+            if let lastModified = response.allHeaderFields["Last-Modified"] as? String,
+                let modificationDate = Downloader.dateFormatter.date(from: lastModified) {
+                handler(.success((location: location, modificationDate: modificationDate)))
+            } else {
+                handler(.success((location: location, modificationDate: nil)))
+            }
+        }
+        
+        func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
+            let bytesDownloaded = Int(bytesWritten)
+            let totalBytesDownloaded = Int(totalBytesWritten)
+            let totalBytesExpectedToDownload: Int? = totalBytesExpectedToWrite == NSURLSessionTransferSizeUnknown
+            ? nil : Int(totalBytesExpectedToWrite)
+            object.bytesDownloadedForItem = totalBytesDownloaded
+            object.bytesExpectedToDownloadForItem = totalBytesExpectedToDownload
+            object.makeProgress(
+                bytesDownloaded: bytesDownloaded,
+                totalBytesDownloadedForItem: totalBytesDownloaded,
+                totalBytesExpectedToDownloadForItem: totalBytesExpectedToDownload
+            )
+        }
+    }
+}
+
+private extension Downloader {
+    static var dateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE',' dd MMM yyyy HH':'mm':'ss 'GMT'"
+        formatter.locale = Locale(identifier: "en_US")
+        formatter.timeZone = TimeZone(abbreviation: "GMT")!
+        return formatter
+    }
+}
+
+private extension URLRequest {
+    mutating func setHeaderFields(_ headerFields: [String: String], with modificationDate: Date?) {
+        headerFields.forEach { setValue($0.1, forHTTPHeaderField: $0.0) }
+        if let modificationDate = modificationDate {
+            let ifModifiedSince = Downloader.dateFormatter.string(from: modificationDate)
+            setValue(ifModifiedSince, forHTTPHeaderField: "If-Modified-Since")
+        }
     }
 }
