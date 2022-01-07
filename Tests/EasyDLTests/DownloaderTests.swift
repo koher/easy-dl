@@ -34,7 +34,7 @@ final class DownloaderTests: XCTestCase {
         try? fileManager.removeItem(at: URL(fileURLWithPath: file1))
         try? fileManager.removeItem(at: URL(fileURLWithPath: file2))
         
-        let downloader = Downloader(items: [(url1, file1), (url2, file2)], expectsPreciseProgress: false)
+        let downloader = Downloader([(from: url1, to: file1), (from: url2, to: file2)], expectsPreciseProgress: false)
         
         let expectation = self.expectation(description: "")
         
@@ -95,11 +95,11 @@ final class DownloaderTests: XCTestCase {
                 let item2 = Item(url: url2, destination: file2, cachePolicy: .returnCacheDataElseLoad) // tests downloading without cache with `.preferCache`
                 downloader = Downloader(items: [item1, item2], requestHeaders: ["Accept-Encoding": "identity"])
             case 1:
-                downloader = Downloader(items: [(url1, file1), (url2, file2)], requestHeaders: ["Accept-Encoding": "identity"])
+                downloader = Downloader([(from: url1, to: file1), (from: url2, to: file2)], requestHeaders: ["Accept-Encoding": "identity"])
             case 2:
-                downloader = Downloader(items: [(url2, file2), (url3, file3)], requestHeaders: ["Accept-Encoding": "identity"])
+                downloader = Downloader([(from: url2, to: file2), (from: url3, to: file3)], requestHeaders: ["Accept-Encoding": "identity"])
             case 3:
-                downloader = Downloader(items: [(url1, file1), (url2, file2)], cachePolicy: .reloadIgnoringLocalCacheData, requestHeaders: ["Accept-Encoding": "identity"])
+                downloader = Downloader([(from: url1, to: file1), (from: url2, to: file2)], cachePolicy: .reloadIgnoringLocalCacheData, requestHeaders: ["Accept-Encoding": "identity"])
             case 4:
                 typealias Item = Downloader.Item
                 let item1 = Item(url: url1, destination: file1)
@@ -182,7 +182,7 @@ final class DownloaderTests: XCTestCase {
         try? fileManager.removeItem(at: URL(fileURLWithPath: file1))
         try? fileManager.removeItem(at: URL(fileURLWithPath: file2))
         
-        let downloader = Downloader(items: [(url1, file1), (url2, file2)], requestHeaders: ["Accept-Encoding": "identity"])
+        let downloader = Downloader([(from: url1, to: file1), (from: url2, to: file2)], requestHeaders: ["Accept-Encoding": "identity"])
         
         let expectation = self.expectation(description: "")
         
@@ -225,7 +225,7 @@ final class DownloaderTests: XCTestCase {
         try? fileManager.removeItem(at: URL(fileURLWithPath: file1))
         try? fileManager.removeItem(at: URL(fileURLWithPath: file2))
         
-        let downloader = Downloader(items: [(url1, file1), (url2, file2)])
+        let downloader = Downloader([(from: url1, to: file1), (from: url2, to: file2)])
         
         let expectation = self.expectation(description: "")
         

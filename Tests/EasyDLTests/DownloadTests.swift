@@ -24,7 +24,7 @@ final class DownloadTests: XCTestCase {
         let file1 = testDirectoryURL.appendingPathComponent("pi10.txt").path
         let file2 = testDirectoryURL.appendingPathComponent("pi100.txt").path
         
-        try await download(items: [(url1, file1), (url2, file2)])
+        try await download([(from: url1, to: file1), (from: url2, to: file2)])
         
         let data1 = try! Data(contentsOf: URL(fileURLWithPath: file1))
         XCTAssertEqual(String(bytes: data1, encoding: .utf8), "3.141592653")
@@ -40,7 +40,7 @@ final class DownloadTests: XCTestCase {
         let file2 = testDirectoryURL.appendingPathComponent("pi100.txt").path
 
         do {
-            try await download(items: [(url1, file1), (url2, file2)])
+            try await download([(from: url1, to: file1), (from: url2, to: file2)])
             XCTFail()
         } catch let error as Downloader.ResponseError {
             XCTAssertEqual((error.response as! HTTPURLResponse).statusCode, 404)
@@ -55,7 +55,7 @@ final class DownloadTests: XCTestCase {
 
         let task = Task {
             do {
-                try await download(items: [(url1, file1), (url2, file2)], requestHeaders: ["Accept-Encoding": "identity"], progressHandler: { bytesDownloaded, bytesExpectedToDownload in
+                try await download([(from: url1, to: file1), (from: url2, to: file2)], requestHeaders: ["Accept-Encoding": "identity"], progressHandler: { bytesDownloaded, bytesExpectedToDownload in
                     print("\(bytesDownloaded) / \(bytesExpectedToDownload!)")
                 })
                 XCTFail()

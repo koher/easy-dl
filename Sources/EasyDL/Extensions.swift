@@ -2,7 +2,7 @@ import Foundation
 
 extension Downloader {
     public convenience init(
-        items: [(URL, String)],
+        _ items: [(from: URL, to: String)],
         expectsPreciseProgress: Bool = true,
         cachePolicy: CachePolicy = .returnCacheDataIfUnmodifiedElseLoad,
         requestHeaders: [String: String]? = nil

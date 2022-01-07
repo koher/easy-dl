@@ -28,12 +28,12 @@ public func download(
 
 @MainActor
 public func download(
-    items: [(URL, String)],
+    _ items: [(from: URL, to: String)],
     expectsPreciseProgress: Bool = true,
     cachePolicy: Downloader.CachePolicy = .returnCacheDataIfUnmodifiedElseLoad,
     requestHeaders: [String: String]? = nil
 ) async throws {
-    let downloader = Downloader(items: items, expectsPreciseProgress: expectsPreciseProgress, cachePolicy: cachePolicy, requestHeaders: requestHeaders)
+    let downloader = Downloader(items, expectsPreciseProgress: expectsPreciseProgress, cachePolicy: cachePolicy, requestHeaders: requestHeaders)
     try await download(with: downloader)
 }
 
@@ -52,13 +52,13 @@ public func download(
 
 @MainActor
 public func download(
-    items: [(URL, String)],
+    _ items: [(from: URL, to: String)],
     expectsPreciseProgress: Bool = true,
     cachePolicy: Downloader.CachePolicy = .returnCacheDataIfUnmodifiedElseLoad,
     requestHeaders: [String: String]? = nil,
     progressHandler: @escaping (Downloader.Progress) -> Void
 ) async throws {
-    let downloader = Downloader(items: items, expectsPreciseProgress: expectsPreciseProgress, cachePolicy: cachePolicy, requestHeaders: requestHeaders)
+    let downloader = Downloader(items, expectsPreciseProgress: expectsPreciseProgress, cachePolicy: cachePolicy, requestHeaders: requestHeaders)
     downloader.progress(progressHandler)
     try await download(with: downloader)
 }
@@ -84,7 +84,7 @@ public func download(
 
 @MainActor
 public func download(
-    items: [(URL, String)],
+    _ items: [(from: URL, to: String)],
     expectsPreciseProgress: Bool = true,
     cachePolicy: Downloader.CachePolicy = .returnCacheDataIfUnmodifiedElseLoad,
     requestHeaders: [String: String]? = nil,
@@ -96,7 +96,7 @@ public func download(
         _ bytesExpectedToDownloadForItem: Int?
     ) -> Void
 ) async throws {
-    let downloader = Downloader(items: items, expectsPreciseProgress: expectsPreciseProgress, cachePolicy: cachePolicy, requestHeaders: requestHeaders)
+    let downloader = Downloader(items, expectsPreciseProgress: expectsPreciseProgress, cachePolicy: cachePolicy, requestHeaders: requestHeaders)
     downloader.progress(progressHandler)
     try await download(with: downloader)
 }
@@ -119,7 +119,7 @@ public func download(
 
 @MainActor
 public func download(
-    items: [(URL, String)],
+    _ items: [(from: URL, to: String)],
     expectsPreciseProgress: Bool = true,
     cachePolicy: Downloader.CachePolicy = .returnCacheDataIfUnmodifiedElseLoad,
     requestHeaders: [String: String]? = nil,
@@ -128,7 +128,7 @@ public func download(
         _ bytesExpectedToDownload: Int?
     ) -> Void
 ) async throws {
-    let downloader = Downloader(items: items, expectsPreciseProgress: expectsPreciseProgress, cachePolicy: cachePolicy, requestHeaders: requestHeaders)
+    let downloader = Downloader(items, expectsPreciseProgress: expectsPreciseProgress, cachePolicy: cachePolicy, requestHeaders: requestHeaders)
     downloader.progress(progressHandler)
     try await download(with: downloader)
 }
@@ -148,13 +148,13 @@ public func download(
 
 @MainActor
 public func download(
-    items: [(URL, String)],
+    _ items: [(from: URL, to: String)],
     expectsPreciseProgress: Bool = true,
     cachePolicy: Downloader.CachePolicy = .returnCacheDataIfUnmodifiedElseLoad,
     requestHeaders: [String: String]? = nil,
     progressHandler: @escaping (Float) -> Void
 ) async throws {
-    let downloader = Downloader(items: items, expectsPreciseProgress: expectsPreciseProgress, cachePolicy: cachePolicy, requestHeaders: requestHeaders)
+    let downloader = Downloader(items, expectsPreciseProgress: expectsPreciseProgress, cachePolicy: cachePolicy, requestHeaders: requestHeaders)
     downloader.progressRate(progressHandler)
     try await download(with: downloader)
 }

@@ -28,7 +28,10 @@ final class EasyDLTests: XCTestCase {
         /**/ let file2 = testDirectoryURL.appendingPathComponent("pi100.txt").path
         
         /**/ var progressSet: Set<String> = []
-        try await download(items: [(url1, file1), (url2, file2)]/**/, requestHeaders: ["Accept-Encoding": "identity"]/**/) { bytesDownloaded, bytesExpectedToDownload in
+        try await download([
+            (from: url1, to: file1),
+            (from: url2, to: file2),
+        ]/**/, requestHeaders: ["Accept-Encoding": "identity"]/**/) { bytesDownloaded, bytesExpectedToDownload in
             print("\(bytesDownloaded) / \(bytesExpectedToDownload!)")
             /**/ progressSet.insert("\(bytesDownloaded) / \(bytesExpectedToDownload!)")
         }
