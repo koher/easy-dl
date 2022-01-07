@@ -117,8 +117,7 @@ public final class Downloader {
             break
         case .returnCacheDataIfUnmodifiedElseLoad:
             modificationDate = item.modificationDate
-        case .returnCacheDataElseLoad
-:
+        case .returnCacheDataElseLoad:
             if item.fileExists {
                 callback(.success(0, [true]))
                 return
@@ -196,8 +195,7 @@ public final class Downloader {
             break
         case .returnCacheDataIfUnmodifiedElseLoad:
             modificationDate = item.modificationDate
-        case .returnCacheDataElseLoad
-:
+        case .returnCacheDataElseLoad:
             break
         }
         
