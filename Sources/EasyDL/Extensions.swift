@@ -4,7 +4,7 @@ extension Downloader {
     public convenience init(
         items: [(URL, String)],
         expectsPreciseProgress: Bool = true,
-        cachePolicy: CachePolicy = .useCacheIfUnchanged,
+        cachePolicy: CachePolicy = .returnCacheDataIfUnmodifiedElseLoad,
         requestHeaders: [String: String]? = nil
     ) {
         self.init(

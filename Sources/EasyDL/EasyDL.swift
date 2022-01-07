@@ -30,7 +30,7 @@ public final class Downloader {
     public convenience init(
         items: [Item],
         expectsPreciseProgress: Bool = true,
-        cachePolicy: CachePolicy = .useCacheIfUnchanged,
+        cachePolicy: CachePolicy = .returnCacheDataIfUnmodifiedElseLoad,
         requestHeaders: [String: String]? = nil
     ) {
         self.init(session: FoundationURLSession(), items: items, expectsPreciseProgress: expectsPreciseProgress, cachePolicy: cachePolicy, requestHeaders: requestHeaders)
@@ -121,11 +121,12 @@ public final class Downloader {
             headerFields[$0.0] = $0.1
         }
         switch item.cachePolicy ?? cachePolicy {
-        case .ignoreCache:
+        case .reloadIgnoringLocalCacheData:
             break
-        case .useCacheIfUnchanged:
+        case .returnCacheDataIfUnmodifiedElseLoad:
             modificationDate = item.modificationDate
-        case .preferCache:
+        case .returnCacheDataElseLoad
+:
             if item.fileExists {
                 callback(.success(0, [true]))
                 return
@@ -174,11 +175,12 @@ public final class Downloader {
             headerFields[$0.0] = $0.1
         }
         switch item.cachePolicy ?? cachePolicy {
-        case .ignoreCache:
+        case .reloadIgnoringLocalCacheData:
             break
-        case .useCacheIfUnchanged:
+        case .returnCacheDataIfUnmodifiedElseLoad:
             modificationDate = item.modificationDate
-        case .preferCache:
+        case .returnCacheDataElseLoad
+:
             break
         }
 
@@ -339,7 +341,9 @@ public final class Downloader {
     }
     
     public enum CachePolicy {
-        case ignoreCache, useCacheIfUnchanged, preferCache
+        case reloadIgnoringLocalCacheData
+        case returnCacheDataIfUnmodifiedElseLoad
+        case returnCacheDataElseLoad
     }
     
     public struct Item {

@@ -125,24 +125,26 @@ class EasyDLTests: XCTestCase {
             case 0:
                 typealias Item = Downloader.Item
                 let item1 = Item(url: url1, destination: file1)
-                let item2 = Item(url: url2, destination: file2, cachePolicy: .preferCache) // tests downloading without cache with `.preferCache`
+                let item2 = Item(url: url2, destination: file2, cachePolicy: .returnCacheDataElseLoad
+) // tests downloading without cache with `.preferCache`
                 downloader = Downloader(items: [item1, item2], requestHeaders: ["Accept-Encoding": "identity"])
             case 1:
                 downloader = Downloader(items: [(url1, file1), (url2, file2)], requestHeaders: ["Accept-Encoding": "identity"])
             case 2:
                 downloader = Downloader(items: [(url2, file2), (url3, file3)], requestHeaders: ["Accept-Encoding": "identity"])
             case 3:
-                downloader = Downloader(items: [(url1, file1), (url2, file2)], cachePolicy: .ignoreCache, requestHeaders: ["Accept-Encoding": "identity"])
+                downloader = Downloader(items: [(url1, file1), (url2, file2)], cachePolicy: .reloadIgnoringLocalCacheData, requestHeaders: ["Accept-Encoding": "identity"])
             case 4:
                 typealias Item = Downloader.Item
                 let item1 = Item(url: url1, destination: file1)
-                let item2 = Item(url: url2, destination: file2, cachePolicy: .ignoreCache)
+                let item2 = Item(url: url2, destination: file2, cachePolicy: .reloadIgnoringLocalCacheData)
                 downloader = Downloader(items: [item1, item2], requestHeaders: ["Accept-Encoding": "identity"])
             #if DEBUG
             case 5:
                 typealias Item = Downloader.Item
                 let item1 = Item(url: url1, destination: file1)
-                let item3 = Item(url: url3, destination: file3, cachePolicy: .preferCache)
+                let item3 = Item(url: url3, destination: file3, cachePolicy: .returnCacheDataElseLoad
+)
                 try! fileManager.setAttributes([.modificationDate: item1.modificationDate! - 1], ofItemAtPath: item1.destination)
                 try! fileManager.setAttributes([.modificationDate: item3.modificationDate! - 1], ofItemAtPath: item3.destination)
                 downloader = Downloader(items: [item1, item3], requestHeaders: ["Accept-Encoding": "identity"])
