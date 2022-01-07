@@ -21,9 +21,6 @@ public final class Downloader {
     private var zelf: Downloader? // To prevent releasing this instance during downloading
 
     private var currentItemIndex: Int = 0
-    private var currentItem: Item! = nil
-    private var currentCallback: ((Result<Void, Error>) -> ())? = nil
-
     private var currentTask: URLSessionTask? = nil
     private var currentResultHandler: ((Result<(location: URL, modificationDate: Date?)?, Error>) -> Void)? = nil
 
@@ -188,9 +185,6 @@ public final class Downloader {
             callback(.success(()))
             return
         }
-        
-        currentItem = item
-        currentCallback = callback
         
         var modificationDate: Date?
         var headerFields: [String: String] = [:]
