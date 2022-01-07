@@ -30,10 +30,6 @@ final class DownloaderTests: XCTestCase {
         let file1 = testDirectoryURL.appendingPathComponent("pi10.txt").path
         let file2 = testDirectoryURL.appendingPathComponent("pi100.txt").path
         
-        let fileManager = FileManager.default
-        try? fileManager.removeItem(at: URL(fileURLWithPath: file1))
-        try? fileManager.removeItem(at: URL(fileURLWithPath: file2))
-        
         let downloader = Downloader([(from: url1, to: file1), (from: url2, to: file2)], expectsPreciseProgress: false)
         
         var progressSet: Set<String> = []
@@ -52,9 +48,6 @@ final class DownloaderTests: XCTestCase {
 
         XCTAssertTrue(progressSet.contains("0.5 / 1.0"))
         XCTAssertTrue(progressSet.contains("1.0 / 1.0"))
-        
-        try? fileManager.removeItem(at: URL(fileURLWithPath: file1))
-        try? fileManager.removeItem(at: URL(fileURLWithPath: file2))
     }
     
     func testCache() async throws {
@@ -64,11 +57,6 @@ final class DownloaderTests: XCTestCase {
         let file1 = testDirectoryURL.appendingPathComponent("pi10.txt").path
         let file2 = testDirectoryURL.appendingPathComponent("pi100.txt").path
         let file3 = testDirectoryURL.appendingPathComponent("pi1000.txt").path
-        
-        let fileManager = FileManager.default
-        try? fileManager.removeItem(at: URL(fileURLWithPath: file1))
-        try? fileManager.removeItem(at: URL(fileURLWithPath: file2))
-        try? fileManager.removeItem(at: URL(fileURLWithPath: file3))
         
         let range: Range<Int>
         #if DEBUG
@@ -100,6 +88,7 @@ final class DownloaderTests: XCTestCase {
                 typealias Item = Downloader.Item
                 let item1 = Item(url: url1, destination: file1)
                 let item3 = Item(url: url3, destination: file3, cachePolicy: .returnCacheDataElseLoad)
+                let fileManager = FileManager.default
                 try! fileManager.setAttributes([.modificationDate: item1.modificationDate! - 1], ofItemAtPath: item1.destination)
                 try! fileManager.setAttributes([.modificationDate: item3.modificationDate! - 1], ofItemAtPath: item3.destination)
                 downloader = Downloader(items: [item1, item3], requestHeaders: ["Accept-Encoding": "identity"])
@@ -146,10 +135,6 @@ final class DownloaderTests: XCTestCase {
                 fatalError("Never reaches here.")
             }
         }
-        
-        try? fileManager.removeItem(at: URL(fileURLWithPath: file1))
-        try? fileManager.removeItem(at: URL(fileURLWithPath: file2))
-        try? fileManager.removeItem(at: URL(fileURLWithPath: file3))
     }
     
     func testCancel() async throws {
@@ -157,10 +142,6 @@ final class DownloaderTests: XCTestCase {
         let url2 = URL(string: "https://koherent.org/pi/pi1000000.txt")!
         let file1 = testDirectoryURL.appendingPathComponent("pi100000.txt").path
         let file2 = testDirectoryURL.appendingPathComponent("pi1000000.txt").path
-        
-        let fileManager = FileManager.default
-        try? fileManager.removeItem(at: URL(fileURLWithPath: file1))
-        try? fileManager.removeItem(at: URL(fileURLWithPath: file2))
         
         let downloader = Downloader([(from: url1, to: file1), (from: url2, to: file2)], requestHeaders: ["Accept-Encoding": "identity"])
         
@@ -182,9 +163,6 @@ final class DownloaderTests: XCTestCase {
         downloader.cancel()
         
         try await task.value
-        
-        try? fileManager.removeItem(at: URL(fileURLWithPath: file1))
-        try? fileManager.removeItem(at: URL(fileURLWithPath: file2))
     }
 
     func testFailure() async throws {
@@ -192,10 +170,6 @@ final class DownloaderTests: XCTestCase {
         let url2 = URL(string: "https://koherent.org/pi/pi100.txt")!
         let file1 = testDirectoryURL.appendingPathComponent("pi10.txt").path
         let file2 = testDirectoryURL.appendingPathComponent("pi100.txt").path
-        
-        let fileManager = FileManager.default
-        try? fileManager.removeItem(at: URL(fileURLWithPath: file1))
-        try? fileManager.removeItem(at: URL(fileURLWithPath: file2))
         
         let downloader = Downloader([(from: url1, to: file1), (from: url2, to: file2)])
         
@@ -205,8 +179,5 @@ final class DownloaderTests: XCTestCase {
         } catch let error as Downloader.ResponseError {
             XCTAssertEqual((error.response as! HTTPURLResponse).statusCode, 404)
         }
-        
-        try? fileManager.removeItem(at: URL(fileURLWithPath: file1))
-        try? fileManager.removeItem(at: URL(fileURLWithPath: file2))
     }
 }
