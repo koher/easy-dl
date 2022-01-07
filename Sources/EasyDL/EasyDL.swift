@@ -9,20 +9,20 @@ public final class Downloader {
     public let requestHeaders: [String: String]?
     
     private var progressHandlers: [(Progress) -> Void] = []
-    private var completionHandlers: [(Result) -> ()] = []
+    private var completionHandlers: [(Result<Void, Error>) -> ()] = []
 
     private var bytesDownloaded: Int! = nil
     private var bytesExpectedToDownload: Int? = nil
     private var bytesDownloadedForItem: Int! = nil
     private var bytesExpectedToDownloadForItem: Int? = nil
-    private var result: Result? = nil
+    private var result: Result<Void, Error>? = nil
     
     private var session: Session
     private var zelf: Downloader? // To prevent releasing this instance during downloading
 
     private var currentItemIndex: Int = 0
     private var currentItem: Item! = nil
-    private var currentCallback: ((Result) -> ())? = nil
+    private var currentCallback: ((Result<Void, Error>) -> ())? = nil
     private var currentTask: URLSessionTask? = nil
     
     private var isCancelled: Bool = false
@@ -60,7 +60,7 @@ public final class Downloader {
             contentLength(of: items[...]) { result in
                 switch result {
                 case .cancel:
-                    self.complete(with: .cancel)
+                    self.complete(with: .failure(CancellationError()))
                 case let .failure(error):
                     self.complete(with: .failure(error))
                 case let .success(length, isCached):
@@ -136,18 +136,18 @@ public final class Downloader {
         session.contentLengthWith(request, callback)
     }
     
-    private func download(_ items: ArraySlice<(Item, IsCached)>, _ callback: @escaping (Result) -> ()) {
+    private func download(_ items: ArraySlice<(Item, IsCached)>, _ callback: @escaping (Result<Void, Error>) -> ()) {
         currentItemIndex = items.startIndex
         
         guard let first = items.first else {
-            callback(.success)
+            callback(.success(()))
             return
         }
         
         let (item, isCached) = first
         download(item, isCached) { result in
             switch result {
-            case .cancel, .failure:
+            case .failure:
                 callback(result)
             case .success:
                 self.download(items[(items.startIndex + 1)...], callback)
@@ -155,14 +155,14 @@ public final class Downloader {
         }
     }
     
-    private func download(_ item: Item, _ isCached: IsCached, _ callback: @escaping (Result) -> ()) {
+    private func download(_ item: Item, _ isCached: IsCached, _ callback: @escaping (Result<Void, Error>) -> ()) {
         if isCancelled {
-            callback(.cancel)
+            callback(.failure(CancellationError()))
             return
         }
         
         if isCached {
-            callback(.success)
+            callback(.success(()))
             return
         }
         
@@ -205,14 +205,14 @@ public final class Downloader {
                     if let modificationDate = modificationDate {
                         try fileManager.setAttributes([.modificationDate: modificationDate], ofItemAtPath: item.destination)
                     }
-                    callback(.success)
+                    callback(.success(()))
                 } catch let error {
                     callback(.failure(error))
                 }
             case .success(.none):
-                callback(.success)
+                callback(.success(()))
             case .cancel:
-                callback(.cancel)
+                callback(.failure(CancellationError()))
             case .failure(let error):
                 callback(.failure(error))
             }
@@ -237,7 +237,7 @@ public final class Downloader {
         }
     }
     
-    private func complete(with result: Result) {
+    private func complete(with result: Result<Void, Error>) {
         completionHandlers.forEach {
             $0(result)
         }
@@ -301,7 +301,7 @@ public final class Downloader {
         }
     }
     
-    public func completion(_ handler: @escaping (Result) -> ()) {
+    public func completion(_ handler: @escaping (Result<Void, Error>) -> ()) {
         DispatchQueue.main.async {
             if let result = self.result {
                 handler(result)
@@ -364,12 +364,6 @@ public final class Downloader {
         internal var fileExists: Bool {
             return FileManager.default.fileExists(atPath: destination)
         }
-    }
-    
-    public enum Result {
-        case success
-        case cancel
-        case failure(Error)
     }
     
     public struct ResponseError: Error {
