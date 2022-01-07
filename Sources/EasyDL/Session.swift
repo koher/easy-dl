@@ -1,28 +1,6 @@
 import Foundation
 
-internal class Session {
-    weak var delegate: SessionDelegate?
-    
-    func contentLengthWith(_ request: Request, _ handler: @escaping (Downloader.ContentLengthResult) -> Void) {
-        fatalError("`Session` is an abstract class. Override this method.")
-    }
-
-    func downloadWith(
-        _ request: Request,
-        progressHandler: @escaping (Progress) -> Void,
-        resultHandler: @escaping (Result) -> Void
-    ) {
-        fatalError("`Session` is an abstract class. Override this method.")
-    }
-    
-    func cancel() {
-        fatalError("`Session` is an abstract class. Override this method.")
-    }
-    
-    func complete() {
-        fatalError("`Session` is an abstract class. Override this method.")
-    }
-
+internal final class Session {
     struct Request {
         let url: URL
         var modificationDate: Date?
@@ -40,13 +18,7 @@ internal class Session {
         case cancel
         case failure(Error)
     }
-}
-
-internal protocol SessionDelegate: AnyObject {
     
-}
-
-internal final class FoundationURLSession: Session {
     private var session: URLSession! = nil
     private var currentTask: URLSessionTask? = nil
     
@@ -55,8 +27,7 @@ internal final class FoundationURLSession: Session {
     
     private var isCancelled = false
     
-    override init() {
-        super.init()
+    init() {
         session = URLSession(configuration: .default, delegate: Delegate(for: self), delegateQueue: .main)
     }
     
@@ -68,7 +39,7 @@ internal final class FoundationURLSession: Session {
         }
     }
     
-    override func contentLengthWith(_ request: Request, _ handler: @escaping (Downloader.ContentLengthResult) -> Void) {
+    func contentLengthWith(_ request: Request, _ handler: @escaping (Downloader.ContentLengthResult) -> Void) {
         var urlRequest = URLRequest(url: request.url)
         urlRequest.httpMethod = "HEAD"
         Self.setHeaderFields(of: &urlRequest, from: request)
@@ -100,7 +71,7 @@ internal final class FoundationURLSession: Session {
         task.resume()
     }
     
-    override func downloadWith(
+    func downloadWith(
         _ request: Request,
         progressHandler: @escaping (Progress) -> Void,
         resultHandler: @escaping (Result) -> Void
@@ -116,13 +87,13 @@ internal final class FoundationURLSession: Session {
         task.resume()
     }
 
-    override func cancel() {
+    func cancel() {
         guard let task = currentTask else { return }
         isCancelled = true
         task.cancel()
     }
     
-    override func complete() {
+    func complete() {
         session.finishTasksAndInvalidate()
         session = nil
         // `self` is released by this if it is not retained outside
@@ -130,9 +101,9 @@ internal final class FoundationURLSession: Session {
     }
 
     class Delegate: NSObject, URLSessionDelegate, URLSessionTaskDelegate, URLSessionDownloadDelegate {
-        private let object: FoundationURLSession
+        private let object: Session
         
-        init(for object: FoundationURLSession) {
+        init(for object: Session) {
             self.object = object
         }
         
@@ -163,7 +134,7 @@ internal final class FoundationURLSession: Session {
             }
             
             if let lastModified = response.allHeaderFields["Last-Modified"] as? String,
-                let modificationDate = FoundationURLSession.dateFormatter.date(from: lastModified) {
+                let modificationDate = Session.dateFormatter.date(from: lastModified) {
                 handler(.success((location: location, modificationDate: modificationDate)))
             } else {
                 handler(.success((location: location, modificationDate: nil)))

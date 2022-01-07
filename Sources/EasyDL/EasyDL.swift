@@ -32,7 +32,7 @@ public final class Downloader {
         cachePolicy: CachePolicy = .returnCacheDataIfUnmodifiedElseLoad,
         requestHeaders: [String: String]? = nil
     ) {
-        self.init(session: FoundationURLSession(), items: items, expectsPreciseProgress: expectsPreciseProgress, cachePolicy: cachePolicy, requestHeaders: requestHeaders)
+        self.init(session: Session(), items: items, expectsPreciseProgress: expectsPreciseProgress, cachePolicy: cachePolicy, requestHeaders: requestHeaders)
     }
 
     internal init(
