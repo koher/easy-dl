@@ -17,7 +17,7 @@ public final class Downloader {
     private var bytesExpectedToDownloadForItem: Int? = nil
     private var result: Result<Void, Error>? = nil
     
-    private var session: Session
+    private let session: Session
     private var zelf: Downloader? // To prevent releasing this instance during downloading
 
     private var currentItemIndex: Int = 0
