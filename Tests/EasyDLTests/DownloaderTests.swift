@@ -10,7 +10,7 @@ import Foundation
 internal let testDirectoryURL: URL = .init(fileURLWithPath:  #file.deletingLastPathComponent.deletingLastPathComponent.appendingPathComponent("TemporaryTestDirectory"))
 
 @MainActor
-final class EasyDLTests: XCTestCase {
+final class DownloaderTests: XCTestCase {
     override class func setUp() {
         let fileManager: FileManager = .default
         try? fileManager.removeItem(at: testDirectoryURL)
