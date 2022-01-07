@@ -53,7 +53,7 @@ public final class Downloader {
                 switch result {
                 case let .failure(error):
                     self.complete(with: .failure(error))
-                case let .success(length, isCached):
+                case let .success((length, isCached)):
                     self.bytesExpectedToDownload = length
                     download(isCached)
                 }
@@ -63,10 +63,10 @@ public final class Downloader {
         }
     }
     
-    private func contentLength(of items: ArraySlice<Item>, _ callback: @escaping (ContentLengthResult) -> ()) {
+    private func contentLength(of items: ArraySlice<Item>, _ callback: @escaping (Result<(length: Int?, isCached: [IsCached]), Error>) -> ()) {
         guard let first = items.first else {
             DispatchQueue.main.async {
-                callback(.success(0, []))
+                callback(.success((length: 0, isCached: [])))
             }
             return
         }
@@ -75,10 +75,10 @@ public final class Downloader {
             switch result {
             case .failure:
                 callback(result)
-            case let .success(headLength, headCached):
+            case let .success((headLength, headCached)):
                 let tail = items[(items.startIndex + 1)...]
                 guard let headLength = headLength else {
-                    callback(.success(nil, headCached + [IsCached](repeating: false, count: items.count - 1)))
+                    callback(.success((length: nil, isCached: headCached + [IsCached](repeating: false, count: items.count - 1))))
                     break
                 }
                 
@@ -86,20 +86,20 @@ public final class Downloader {
                     switch result {
                     case .failure:
                         callback(result)
-                    case let .success(tailLength, tailCached):
+                    case let .success((tailLength, tailCached)):
                         guard let tailLength = tailLength else {
-                            callback(.success(nil, headCached + tailCached))
+                            callback(.success((length: nil, isCached: headCached + tailCached)))
                             break
                         }
                         
-                        callback(.success(headLength + tailLength, headCached + tailCached))
+                        callback(.success((headLength + tailLength, headCached + tailCached)))
                     }
                 }
             }
         }
     }
     
-    private func contentLength(of item: Item, _ callback: @escaping (ContentLengthResult) -> ()) {
+    private func contentLength(of item: Item, _ callback: @escaping (Result<(length: Int?, isCached: [IsCached]), Error>) -> ()) {
         if isCancelled {
             callback(.failure(CancellationError()))
             return
@@ -117,7 +117,7 @@ public final class Downloader {
             modificationDate = item.modificationDate
         case .returnCacheDataElseLoad:
             if item.fileExists {
-                callback(.success(0, [true]))
+                callback(.success((length: 0, isCached: [true])))
                 return
             }
         }
@@ -132,22 +132,22 @@ public final class Downloader {
             }
             
             guard let urlResponse = urlResponse as? HTTPURLResponse else {
-                callback(.success(nil, [false]))
+                callback(.success((length: nil, isCached: [false])))
                 return
             }
             
             if urlResponse.statusCode == 304 {
-                callback(.success(0, [true]))
+                callback(.success((length: 0, isCached: [true])))
                 return
             }
             
             let contentLength = urlResponse.expectedContentLength
             if contentLength == -1 { // `-1` because no `NSURLResponseUnknownLength` in Swift
-                callback(.success(nil, [false]))
+                callback(.success((length: nil, isCached: [false])))
                 return
             }
             
-            callback(.success(Int(contentLength), [false]))
+            callback(.success((length: Int(contentLength), isCached: [false])))
         }
         self.currentTask = task
         task.resume()
@@ -378,11 +378,6 @@ public final class Downloader {
     
     public struct ResponseError: Error {
         public let response: URLResponse
-    }
-    
-    internal enum ContentLengthResult {
-        case success(Int?, [IsCached])
-        case failure(Error)
     }
 }
 
