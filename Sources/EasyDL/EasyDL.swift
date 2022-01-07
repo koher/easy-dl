@@ -51,8 +51,6 @@ public final class Downloader {
         if expectsPreciseProgress {
             contentLength(of: items[...]) { result in
                 switch result {
-                case .cancel:
-                    self.complete(with: .failure(CancellationError()))
                 case let .failure(error):
                     self.complete(with: .failure(error))
                 case let .success(length, isCached):
@@ -75,7 +73,7 @@ public final class Downloader {
         
         contentLength(of: first) { result in
             switch result {
-            case .cancel, .failure:
+            case .failure:
                 callback(result)
             case let .success(headLength, headCached):
                 let tail = items[(items.startIndex + 1)...]
@@ -86,7 +84,7 @@ public final class Downloader {
                 
                 self.contentLength(of: tail) { result in
                     switch result {
-                    case .cancel, .failure:
+                    case .failure:
                         callback(result)
                     case let .success(tailLength, tailCached):
                         guard let tailLength = tailLength else {
@@ -103,7 +101,7 @@ public final class Downloader {
     
     private func contentLength(of item: Item, _ callback: @escaping (ContentLengthResult) -> ()) {
         if isCancelled {
-            callback(.cancel)
+            callback(.failure(CancellationError()))
             return
         }
         
@@ -384,7 +382,6 @@ public final class Downloader {
     
     internal enum ContentLengthResult {
         case success(Int?, [IsCached])
-        case cancel
         case failure(Error)
     }
 }
