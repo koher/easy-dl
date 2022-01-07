@@ -46,7 +46,7 @@ public final class Downloader {
         @Sendable func download(_ isCached: [IsCached]) async {
             assert(items.count == isCached.count) // Always true for `Downloader` without bugs
             do {
-                try await self.download(ArraySlice(zip(items, isCached)))
+                try await self.download(zip(items, isCached))
                 complete(with: .success(()))
             } catch {
                 complete(with: .failure(error))
@@ -146,15 +146,11 @@ public final class Downloader {
         }
     }
     
-    private func download(_ items: ArraySlice<(Item, IsCached)>) async throws {
-        currentItemIndex = items.startIndex
-        
-        guard let (item, isCached) = items.first else {
-            return
+    private func download(_ items: Zip2Sequence<[Item], [IsCached]>) async throws {
+        for (i, (item, isCached)) in items.enumerated() {
+            currentItemIndex = i
+            try await download(item, isCached)
         }
-        
-        try await download(item, isCached)
-        try await download(items[(items.startIndex + 1)...])
     }
     
     private func download(_ item: Item, _ isCached: IsCached) async throws {
