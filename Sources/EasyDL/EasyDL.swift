@@ -40,27 +40,20 @@ public final class Downloader {
         
         urlSessionDelegate.object = self
 
-        @Sendable func download(_ isCached: [IsCached]) async {
-            assert(items.count == isCached.count) // Always true for `Downloader` without bugs
+        Task {
             do {
-                try await self.download(zip(items, isCached))
+                if expectsPreciseProgress {
+                    let (length, isCached) = try await contentLength(of: items)
+                    assert(items.count == isCached.count) // Always true for `Downloader` without bugs
+                    self.bytesExpectedToDownload = length
+                    try await self.download(zip(items, isCached))
+                } else {
+                    let isCached: [IsCached] = .init(repeating: false, count: items.count)
+                    try await self.download(zip(items, isCached))
+                }
                 complete(with: .success(()))
             } catch {
                 complete(with: .failure(error))
-            }
-        }
-
-        Task {
-            if expectsPreciseProgress {
-                do {
-                    let (length, isCached) = try await contentLength(of: items)
-                    self.bytesExpectedToDownload = length
-                    await download(isCached)
-                } catch {
-                    self.complete(with: .failure(error))
-                }
-            } else {
-                await download([IsCached](repeating: false, count: items.count))
             }
         }
     }
