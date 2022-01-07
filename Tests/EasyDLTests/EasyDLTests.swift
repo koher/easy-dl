@@ -7,7 +7,7 @@ import EasyDL
 
 import Foundation
 
-private let dir: String = #file.deletingLastPathComponent.deletingLastPathComponent
+internal let dir: String = #file.deletingLastPathComponent.deletingLastPathComponent.appendingPathComponent("TestDirectory")
 
 class EasyDLTests: XCTestCase {
     func testExample() {
