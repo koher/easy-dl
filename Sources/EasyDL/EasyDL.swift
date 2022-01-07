@@ -56,7 +56,7 @@ public final class Downloader {
         Task {
             if expectsPreciseProgress {
                 do {
-                    let (length, isCached) = try await contentLength(of: items[...])
+                    let (length, isCached) = try await contentLength(of: items)
                     self.bytesExpectedToDownload = length
                     await download(isCached)
                 } catch {
@@ -68,27 +68,27 @@ public final class Downloader {
         }
     }
     
-    private func contentLength(of items: ArraySlice<Item>) async throws -> (length: Int?, isCached: [IsCached]) {
-        guard let first = items.first else {
-            return (length: 0, isCached: [])
+    private func contentLength<Items>(of items: Items) async throws -> (length: Int?, isCached: [IsCached]) where Items: Sequence, Items.Element == Item {
+        var length: Int? = 0
+        var isCached: [IsCached] = []
+        
+        for item in items {
+            let (itemLength, itemIsCached) = try await contentLength(of: item)
+            isCached.append(itemIsCached)
+            guard let lengthNonNil = length else {
+                continue
+            }
+            guard let itemLength = itemLength else {
+                length = nil
+                continue
+            }
+            length = lengthNonNil + itemLength
         }
         
-        let (headLength, headCached) = try await contentLength(of: first)
-        
-        let tail = items[(items.startIndex + 1)...]
-        guard let headLength = headLength else {
-            return (length: nil, isCached: headCached + [IsCached](repeating: false, count: items.count - 1))
-        }
-        
-        let (tailLength, tailCached) = try await self.contentLength(of: tail)
-        guard let tailLength = tailLength else {
-            return (length: nil, isCached: headCached + tailCached)
-        }
-        
-        return (headLength + tailLength, headCached + tailCached)
+        return (length, isCached)
     }
     
-    private func contentLength(of item: Item) async throws -> (length: Int?, isCached: [IsCached]) {
+    private func contentLength(of item: Item) async throws -> (length: Int?, isCached: IsCached) {
         if isCancelled {
             throw CancellationError()
         }
@@ -105,7 +105,7 @@ public final class Downloader {
             modificationDate = item.modificationDate
         case .returnCacheDataElseLoad:
             if item.fileExists {
-                return (length: 0, isCached: [true])
+                return (length: 0, isCached: true)
             }
         }
         
@@ -124,22 +124,22 @@ public final class Downloader {
                 }
                 
                 guard let urlResponse = urlResponse as? HTTPURLResponse else {
-                    continuation.resume(returning: (length: nil, isCached: [false]))
+                    continuation.resume(returning: (length: nil, isCached: false))
                     return
                 }
                 
                 if urlResponse.statusCode == 304 {
-                    continuation.resume(returning: (length: 0, isCached: [true]))
+                    continuation.resume(returning: (length: 0, isCached: true))
                     return
                 }
                 
                 let contentLength = urlResponse.expectedContentLength
                 if contentLength == -1 { // `-1` because no `NSURLResponseUnknownLength` in Swift
-                    continuation.resume(returning: (length: nil, isCached: [false]))
+                    continuation.resume(returning: (length: nil, isCached: false))
                     return
                 }
                 
-                continuation.resume(returning: (length: Int(contentLength), isCached: [false]))
+                continuation.resume(returning: (length: Int(contentLength), isCached: false))
             }
             self.currentTask = task
             task.resume()
