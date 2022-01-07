@@ -10,8 +10,8 @@ try await download([
     print("\(bytesDownloaded) / \(bytesExpectedToDownload!)")
 }
 
-let data1 = try! Data(contentsOf: URL(fileURLWithPath: file1))
-let data2 = try! Data(contentsOf: URL(fileURLWithPath: file2))
+let data1 = try Data(contentsOf: URL(fileURLWithPath: file1))
+let data2 = try Data(contentsOf: URL(fileURLWithPath: file2))
 ```
 
 ## Cache policies

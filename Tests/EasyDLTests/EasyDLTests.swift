@@ -36,10 +36,10 @@ final class EasyDLTests: XCTestCase {
             /**/ progressSet.insert("\(bytesDownloaded) / \(bytesExpectedToDownload!)")
         }
         
-        let data1 = try! Data(contentsOf: URL(fileURLWithPath: file1))
+        let data1 = try Data(contentsOf: URL(fileURLWithPath: file1))
         /**/ XCTAssertEqual(String(bytes: data1, encoding: .utf8), "3.141592653")
         
-        let data2 = try! Data(contentsOf: URL(fileURLWithPath: file2))
+        let data2 = try Data(contentsOf: URL(fileURLWithPath: file2))
         /**/ XCTAssertEqual(String(bytes: data2, encoding: .utf8), "3.141592653589793238462643383279502884197169399375105820974944592307816406286208998628034825342117067")
         
         /**/ XCTAssertTrue(progressSet.contains("11 / 112"))
