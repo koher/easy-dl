@@ -1,6 +1,7 @@
 import XCTest
 import EasyDL
 
+@MainActor
 final class DownloadTests: XCTestCase {
     override class func setUp() {
         let fileManager: FileManager = .default

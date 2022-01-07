@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 private func download(with downloader: Downloader) async throws {
     return try await withTaskCancellationHandler(operation: {
         return try await withCheckedThrowingContinuation { continuation in
@@ -8,10 +9,13 @@ private func download(with downloader: Downloader) async throws {
             }
         }
     }, onCancel: {
-        downloader.cancel()
+        Task { @MainActor in
+            downloader.cancel()
+        }
     })
 }
 
+@MainActor
 public func download(
     items: [Downloader.Item],
     expectsPreciseProgress: Bool = true,
@@ -22,6 +26,7 @@ public func download(
     try await download(with: downloader)
 }
 
+@MainActor
 public func download(
     items: [(URL, String)],
     expectsPreciseProgress: Bool = true,
@@ -32,6 +37,7 @@ public func download(
     try await download(with: downloader)
 }
 
+@MainActor
 public func download(
     items: [Downloader.Item],
     expectsPreciseProgress: Bool = true,
@@ -44,6 +50,7 @@ public func download(
     try await download(with: downloader)
 }
 
+@MainActor
 public func download(
     items: [(URL, String)],
     expectsPreciseProgress: Bool = true,
@@ -56,6 +63,7 @@ public func download(
     try await download(with: downloader)
 }
 
+@MainActor
 public func download(
     items: [Downloader.Item],
     expectsPreciseProgress: Bool = true,
@@ -74,6 +82,7 @@ public func download(
     try await download(with: downloader)
 }
 
+@MainActor
 public func download(
     items: [(URL, String)],
     expectsPreciseProgress: Bool = true,
@@ -92,6 +101,7 @@ public func download(
     try await download(with: downloader)
 }
 
+@MainActor
 public func download(
     items: [Downloader.Item],
     expectsPreciseProgress: Bool = true,
@@ -107,6 +117,7 @@ public func download(
     try await download(with: downloader)
 }
 
+@MainActor
 public func download(
     items: [(URL, String)],
     expectsPreciseProgress: Bool = true,

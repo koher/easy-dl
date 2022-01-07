@@ -2,6 +2,7 @@ import Foundation
 
 internal typealias IsCached = Bool
 
+@MainActor
 public final class Downloader {
     public let items: [Item]
     public let expectsPreciseProgress: Bool
@@ -229,34 +230,29 @@ public final class Downloader {
     }
     
     public func cancel() {
-        DispatchQueue.main.async {
-            if self.isCancelled { return }
-            
-            self.isCancelled = true
-            self.complete(with: .failure(CancellationError()))
-            self.currentTask?.cancel()
-        }
+        if self.isCancelled { return }
+        
+        self.isCancelled = true
+        self.complete(with: .failure(CancellationError()))
+        self.currentTask?.cancel()
     }
     
     public func progress(_ handler: @escaping (Progress) -> Void) {
-        DispatchQueue.main.async {
-            if let bytesDownloaded = self.bytesDownloaded {
-                handler(Progress(
-                    bytesDownloaded: bytesDownloaded,
-                    bytesExpectedToDownload: self.bytesExpectedToDownload,
-                    itemIndex: self.items.count,
-                    numberOfItems: self.items.count,
-                    bytesDownloadedForItem: self.bytesDownloadedForItem,
-                    bytesExpectedToDownloadForItem: self.bytesExpectedToDownloadForItem
-                ))
-            }
-            guard self.result == nil else {
-                return
-            }
-            
-            self.progressHandlers.append(handler)
+        if let bytesDownloaded = self.bytesDownloaded {
+            handler(Progress(
+                bytesDownloaded: bytesDownloaded,
+                bytesExpectedToDownload: self.bytesExpectedToDownload,
+                itemIndex: self.items.count,
+                numberOfItems: self.items.count,
+                bytesDownloadedForItem: self.bytesDownloadedForItem,
+                bytesExpectedToDownloadForItem: self.bytesExpectedToDownloadForItem
+            ))
         }
-
+        guard self.result == nil else {
+            return
+        }
+        
+        self.progressHandlers.append(handler)
     }
     
     public func progress(
@@ -280,14 +276,12 @@ public final class Downloader {
     }
     
     public func completion(_ handler: @escaping (Result<Void, Error>) -> ()) {
-        DispatchQueue.main.async {
-            if let result = self.result {
-                handler(result)
-                return
-            }
-            
-            self.completionHandlers.append(handler)
+        if let result = self.result {
+            handler(result)
+            return
         }
+        
+        self.completionHandlers.append(handler)
     }
     
     public struct Progress {
@@ -350,6 +344,7 @@ public final class Downloader {
 }
 
 extension Downloader {
+    @MainActor
     private final class URLSessionDelegateObject: NSObject, URLSessionDelegate, URLSessionTaskDelegate, URLSessionDownloadDelegate {
         var object: Downloader!
         
@@ -404,7 +399,7 @@ extension Downloader {
 }
 
 private extension Downloader {
-    static var dateFormatter: DateFormatter {
+    nonisolated static var dateFormatter: DateFormatter {
         let formatter = DateFormatter()
         formatter.dateFormat = "EEE',' dd MMM yyyy HH':'mm':'ss 'GMT'"
         formatter.locale = Locale(identifier: "en_US")

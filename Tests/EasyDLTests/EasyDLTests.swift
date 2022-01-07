@@ -9,7 +9,8 @@ import Foundation
 
 internal let testDirectoryURL: URL = .init(fileURLWithPath:  #file.deletingLastPathComponent.deletingLastPathComponent.appendingPathComponent("TemporaryTestDirectory"))
 
-class EasyDLTests: XCTestCase {
+@MainActor
+final class EasyDLTests: XCTestCase {
     override class func setUp() {
         let fileManager: FileManager = .default
         try? fileManager.removeItem(at: testDirectoryURL)
@@ -288,15 +289,5 @@ class EasyDLTests: XCTestCase {
         
         try? fileManager.removeItem(at: URL(fileURLWithPath: file1))
         try? fileManager.removeItem(at: URL(fileURLWithPath: file2))
-    }
-
-    static var allTests : [(String, (EasyDLTests) -> () throws -> Void)] {
-        return [
-            ("testExample", testExample),
-            ("testProgress", testProgress),
-            ("testCache", testCache),
-            ("testCancel", testCancel),
-            ("testFailure", testFailure),
-        ]
     }
 }
