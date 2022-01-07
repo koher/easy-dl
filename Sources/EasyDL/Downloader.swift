@@ -168,6 +168,7 @@ public final class Downloader {
         }
         
         var urlRequest = URLRequest(url: item.url)
+        urlRequest.cachePolicy = .reloadIgnoringLocalCacheData
         urlRequest.setHeaderFields(headerFields, with: modificationDate)
 
         return try await withCheckedThrowingContinuation { continuation in
