@@ -3,11 +3,7 @@ import Foundation
 @MainActor
 private func download(with downloader: Downloader) async throws {
     return try await withTaskCancellationHandler(operation: {
-        return try await withCheckedThrowingContinuation { continuation in
-            downloader.completion { result in
-                continuation.resume(with: result)
-            }
-        }
+        try await downloader.completion()
     }, onCancel: {
         Task { @MainActor in
             downloader.cancel()

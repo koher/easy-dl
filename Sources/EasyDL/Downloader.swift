@@ -256,13 +256,17 @@ public final class Downloader {
         self.progressHandlers.append(handler)
     }
     
-   public func completion(_ handler: @escaping (Result<Void, Error>) -> ()) {
+    public func completion() async throws {
         if let result = self.result {
-            handler(result)
+            try result.get()
             return
         }
         
-        self.completionHandlers.append(handler)
+        return try await withCheckedThrowingContinuation { continuation in
+            self.completionHandlers.append { result in
+                continuation.resume(with: result)
+            }
+        }
     }
     
     public struct Progress {
