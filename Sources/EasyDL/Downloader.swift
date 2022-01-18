@@ -85,10 +85,6 @@ public final class Downloader {
         }
         
         var modificationDate: Date?
-        var headerFields: [String: String] = [:]
-        requestHeaders.forEach {
-            headerFields[$0.0] = $0.1
-        }
         switch item.cachePolicy ?? cachePolicy {
         case .reloadIgnoringLocalCacheData:
             break
@@ -100,9 +96,12 @@ public final class Downloader {
             }
         }
         
+        var requestHeaders: [String: String] = self.requestHeaders
+        requestHeaders.merge(item.requestHeaders) { _, value in value }
+
         var request = URLRequest(url: item.url)
         request.httpMethod = "HEAD"
-        request.setHeaderFields(headerFields, with: modificationDate)
+        request.setHeaderFields(requestHeaders, with: modificationDate)
         return try await withCheckedThrowingContinuation { continuation in
             if isCancelled {
                 continuation.resume(throwing: CancellationError())
@@ -154,10 +153,6 @@ public final class Downloader {
         }
         
         var modificationDate: Date?
-        var headerFields: [String: String] = [:]
-        requestHeaders.forEach {
-            headerFields[$0.0] = $0.1
-        }
         switch item.cachePolicy ?? cachePolicy {
         case .reloadIgnoringLocalCacheData:
             break
@@ -167,9 +162,12 @@ public final class Downloader {
             break
         }
         
+        var requestHeaders: [String: String] = self.requestHeaders
+        requestHeaders.merge(item.requestHeaders) { _, value in value }
+
         var request = URLRequest(url: item.url)
         request.cachePolicy = .reloadIgnoringLocalCacheData
-        request.setHeaderFields(headerFields, with: modificationDate)
+        request.setHeaderFields(requestHeaders, with: modificationDate)
 
         return try await withCheckedThrowingContinuation { continuation in
             currentResultHandler = { result in
@@ -307,11 +305,13 @@ public final class Downloader {
         public var url: URL
         public var destination: String
         public var cachePolicy: CachePolicy?
+        public var requestHeaders: [String: String]
         
-        public init(url: URL, destination: String, cachePolicy: CachePolicy? = nil) {
+        public init(url: URL, destination: String, cachePolicy: CachePolicy? = nil, requestHeaders: [String: String] = [:]) {
             self.url = url
             self.destination = destination
             self.cachePolicy = cachePolicy
+            self.requestHeaders = requestHeaders
         }
         
         internal var modificationDate: Date? {
