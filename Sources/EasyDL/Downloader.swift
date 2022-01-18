@@ -7,7 +7,7 @@ public final class Downloader {
     public let items: [Item]
     public let expectsPreciseProgress: Bool
     public let cachePolicy: CachePolicy
-    public let requestHeaders: [String: String]?
+    public let requestHeaders: [String: String]
     
     private var progressHandlers: [(Progress) -> Void] = []
     private var completionHandlers: [(Result<Void, Error>) -> ()] = []
@@ -30,7 +30,7 @@ public final class Downloader {
         items: [Item],
         expectsPreciseProgress: Bool = true,
         cachePolicy: CachePolicy = .returnCacheDataIfUnmodifiedElseLoad,
-        requestHeaders: [String: String]? = nil
+        requestHeaders: [String: String] = [:]
     ) {
         let sessionDelegate = URLSessionDelegateObject()
         self.session = URLSession(configuration: .default, delegate: sessionDelegate, delegateQueue: .main)
@@ -86,7 +86,7 @@ public final class Downloader {
         
         var modificationDate: Date?
         var headerFields: [String: String] = [:]
-        requestHeaders?.forEach {
+        requestHeaders.forEach {
             headerFields[$0.0] = $0.1
         }
         switch item.cachePolicy ?? cachePolicy {
@@ -155,7 +155,7 @@ public final class Downloader {
         
         var modificationDate: Date?
         var headerFields: [String: String] = [:]
-        requestHeaders?.forEach {
+        requestHeaders.forEach {
             headerFields[$0.0] = $0.1
         }
         switch item.cachePolicy ?? cachePolicy {

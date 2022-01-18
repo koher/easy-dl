@@ -5,7 +5,7 @@ extension Downloader {
         _ items: [(from: URL, to: String)],
         expectsPreciseProgress: Bool = true,
         cachePolicy: CachePolicy = .returnCacheDataIfUnmodifiedElseLoad,
-        requestHeaders: [String: String]? = nil
+        requestHeaders: [String: String] = [:]
     ) {
         self.init(
             items: items.map { Item(url: $0.0, destination: $0.1) },
