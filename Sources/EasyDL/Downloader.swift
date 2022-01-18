@@ -101,6 +101,7 @@ public final class Downloader {
 
         var request = URLRequest(url: item.url)
         request.httpMethod = "HEAD"
+        request.cachePolicy = .reloadIgnoringLocalCacheData
         request.setHeaderFields(requestHeaders, with: modificationDate)
         return try await withCheckedThrowingContinuation { continuation in
             if isCancelled {
