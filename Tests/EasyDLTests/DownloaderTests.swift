@@ -176,8 +176,8 @@ final class DownloaderTests: XCTestCase {
         do {
             try await downloader.completion()
             XCTFail()
-        } catch let error as Downloader.ResponseError {
-            XCTAssertEqual((error.response as! HTTPURLResponse).statusCode, 404)
+        } catch DownloadingError.response(let response) {
+            XCTAssertEqual((response as! HTTPURLResponse).statusCode, 404)
         }
     }
 }

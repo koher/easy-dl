@@ -110,7 +110,7 @@ public final class Downloader {
             }
             let task = session.dataTask(with: request) { _, response, error in
                 if let error = error {
-                    continuation.resume(throwing: error)
+                    continuation.resume(throwing: DownloadingError.network(cause: error))
                     return
                 }
                 
@@ -124,7 +124,7 @@ public final class Downloader {
                     return
                 }
                 guard response.statusCode == 200 else {
-                    continuation.resume(throwing: Downloader.ResponseError(response: response))
+                    continuation.resume(throwing: DownloadingError.response(response))
                     return
                 }
                 
@@ -187,7 +187,7 @@ public final class Downloader {
                         }
                         continuation.resume()
                     } catch let error {
-                        continuation.resume(throwing: error)
+                        continuation.resume(throwing: DownloadingError.io(cause: error))
                     }
                 case .success(.none):
                     continuation.resume()
@@ -327,10 +327,6 @@ public final class Downloader {
             return FileManager.default.fileExists(atPath: destination)
         }
     }
-    
-    public struct ResponseError: Error {
-        public let response: URLResponse
-    }
 }
 
 extension Downloader {
@@ -347,7 +343,7 @@ extension Downloader {
             }
             
             if let error = error {
-                handler(.failure(error))
+                handler(.failure(DownloadingError.network(cause: error)))
             }
         }
         
@@ -360,7 +356,7 @@ extension Downloader {
                 return
             }
             guard response.statusCode == 200 else {
-                handler(.failure(Downloader.ResponseError(response: response)))
+                handler(.failure(DownloadingError.response(response)))
                 return
             }
             

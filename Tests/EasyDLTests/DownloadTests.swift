@@ -42,8 +42,8 @@ final class DownloadTests: XCTestCase {
         do {
             try await download([(from: url1, to: file1), (from: url2, to: file2)])
             XCTFail()
-        } catch let error as Downloader.ResponseError {
-            XCTAssertEqual((error.response as! HTTPURLResponse).statusCode, 404)
+        } catch DownloadingError.response(let response) {
+            XCTAssertEqual((response as! HTTPURLResponse).statusCode, 404)
         }
     }
     
