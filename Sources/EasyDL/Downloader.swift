@@ -203,8 +203,8 @@ public final class Downloader {
         } else {
             self.bytesDownloaded = bytesDownloaded
         }
-        progressHandlers.forEach {
-            $0(Progress(
+        for progressHandler in progressHandlers {
+            progressHandler(Progress(
                 bytesDownloaded: self.bytesDownloaded,
                 bytesExpectedToDownload: self.bytesExpectedToDownload,
                 itemIndex: self.currentItemIndex,
@@ -218,8 +218,8 @@ public final class Downloader {
     private func complete(with result: Result<Void, Error>) {
         guard self.result == nil else { return }
         
-        completionHandlers.forEach {
-            $0(result)
+        for completionHandler in completionHandlers {
+            completionHandler(result)
         }
         
         self.result = result
@@ -395,7 +395,9 @@ private extension Downloader {
 
 private extension URLRequest {
     mutating func setHeaderFields(_ headerFields: [String: String], with modificationDate: Date?) {
-        headerFields.forEach { setValue($0.1, forHTTPHeaderField: $0.0) }
+        for (key, value) in headerFields {
+            setValue(value, forHTTPHeaderField: key)
+        }
         if let modificationDate = modificationDate {
             let ifModifiedSince = Downloader.dateFormatter.string(from: modificationDate)
             setValue(ifModifiedSince, forHTTPHeaderField: "If-Modified-Since")
