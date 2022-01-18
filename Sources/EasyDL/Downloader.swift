@@ -123,6 +123,10 @@ public final class Downloader {
                     continuation.resume(returning: (length: 0, isCached: true))
                     return
                 }
+                guard response.statusCode == 200 else {
+                    continuation.resume(throwing: Downloader.ResponseError(response: response))
+                    return
+                }
                 
                 let contentLength = response.expectedContentLength
                 if contentLength == -1 { // `-1` because no `NSURLResponseUnknownLength` in Swift
