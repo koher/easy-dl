@@ -18,7 +18,7 @@ public final class Downloader {
     private var bytesExpectedToDownloadForItem: Int? = nil
     private var result: Result<Void, Error>? = nil
     
-    private let urlSession: URLSession
+    private let session: URLSession
 
     private var currentItemIndex: Int = 0
     private var currentTask: URLSessionTask? = nil
@@ -32,14 +32,14 @@ public final class Downloader {
         cachePolicy: CachePolicy = .returnCacheDataIfUnmodifiedElseLoad,
         requestHeaders: [String: String]? = nil
     ) {
-        let urlSessionDelegate = URLSessionDelegateObject()
-        self.urlSession = URLSession(configuration: .default, delegate: urlSessionDelegate, delegateQueue: .main)
+        let sessionDelegate = URLSessionDelegateObject()
+        self.session = URLSession(configuration: .default, delegate: sessionDelegate, delegateQueue: .main)
         self.items = items
         self.expectsPreciseProgress = expectsPreciseProgress
         self.cachePolicy = cachePolicy
         self.requestHeaders = requestHeaders
         
-        urlSessionDelegate.object = self
+        sessionDelegate.object = self
 
         Task {
             do {
@@ -100,31 +100,31 @@ public final class Downloader {
             }
         }
         
-        var urlRequest = URLRequest(url: item.url)
-        urlRequest.httpMethod = "HEAD"
-        urlRequest.setHeaderFields(headerFields, with: modificationDate)
+        var request = URLRequest(url: item.url)
+        request.httpMethod = "HEAD"
+        request.setHeaderFields(headerFields, with: modificationDate)
         return try await withCheckedThrowingContinuation { continuation in
             if isCancelled {
                 continuation.resume(throwing: CancellationError())
                 return
             }
-            let task = urlSession.dataTask(with: urlRequest) { _, urlResponse, error in
+            let task = session.dataTask(with: request) { _, response, error in
                 if let error = error {
                     continuation.resume(throwing: error)
                     return
                 }
                 
-                guard let urlResponse = urlResponse as? HTTPURLResponse else {
+                guard let response = response as? HTTPURLResponse else {
                     continuation.resume(returning: (length: nil, isCached: false))
                     return
                 }
                 
-                if urlResponse.statusCode == 304 {
+                if response.statusCode == 304 {
                     continuation.resume(returning: (length: 0, isCached: true))
                     return
                 }
                 
-                let contentLength = urlResponse.expectedContentLength
+                let contentLength = response.expectedContentLength
                 if contentLength == -1 { // `-1` because no `NSURLResponseUnknownLength` in Swift
                     continuation.resume(returning: (length: nil, isCached: false))
                     return
@@ -167,9 +167,9 @@ public final class Downloader {
             break
         }
         
-        var urlRequest = URLRequest(url: item.url)
-        urlRequest.cachePolicy = .reloadIgnoringLocalCacheData
-        urlRequest.setHeaderFields(headerFields, with: modificationDate)
+        var request = URLRequest(url: item.url)
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.setHeaderFields(headerFields, with: modificationDate)
 
         return try await withCheckedThrowingContinuation { continuation in
             currentResultHandler = { result in
@@ -193,7 +193,7 @@ public final class Downloader {
                 }
             }
             
-            let task = urlSession.downloadTask(with: urlRequest)
+            let task = session.downloadTask(with: request)
             currentTask = task
             task.resume()
         }
