@@ -102,7 +102,6 @@ public final class Downloader {
         var requestHeaders: [String: String] = self.requestHeaders
         requestHeaders.merge(item.requestHeaders) { _, value in value }
 
-        print("A timeoutInterval", item.timeoutInterval ?? timeoutInterval)
         var request = URLRequest(
             url: item.url,
             cachePolicy: .reloadIgnoringLocalCacheData,
@@ -177,7 +176,6 @@ public final class Downloader {
         var requestHeaders: [String: String] = self.requestHeaders
         requestHeaders.merge(item.requestHeaders) { _, value in value }
 
-        print("B timeoutInterval", item.timeoutInterval ?? timeoutInterval)
         var request = URLRequest(
             url: item.url,
             cachePolicy: .reloadIgnoringLocalCacheData,
