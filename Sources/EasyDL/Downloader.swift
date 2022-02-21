@@ -421,6 +421,8 @@ private extension Downloader {
                 if error.code == NSURLErrorTimedOut {
                     return DownloadingError.timeout(cause: error)
                 }
+            } else if error.code == NSURLErrorCancelled {
+                return CancellationError()
             }
         }
         return DownloadingError.network(cause: error)
