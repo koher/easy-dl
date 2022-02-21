@@ -5,12 +5,14 @@ extension Downloader {
         _ items: [(from: URL, to: String)],
         expectsPreciseProgress: Bool = true,
         cachePolicy: CachePolicy = .returnCacheDataIfUnmodifiedElseLoad,
+        timeoutInterval: TimeInterval = 60.0,
         requestHeaders: [String: String] = [:]
     ) {
         self.init(
             items: items.map { Item(url: $0.0, destination: $0.1) },
             expectsPreciseProgress: expectsPreciseProgress,
             cachePolicy: cachePolicy,
+            timeoutInterval: timeoutInterval,
             requestHeaders: requestHeaders
         )
     }

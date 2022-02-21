@@ -47,6 +47,20 @@ final class DownloadTests: XCTestCase {
         }
     }
     
+    func testTimeout() async throws {
+        let url1 = URL(string: "https://koherent.org/pi/pi100000.txt")!
+        let url2 = URL(string: "https://koherent.org/pi/pi1000000.txt")!
+        let file1 = testDirectoryURL.appendingPathComponent("pi100000.txt").path
+        let file2 = testDirectoryURL.appendingPathComponent("pi1000000.txt").path
+
+        do {
+            try await download([(from: url1, to: file1), (from: url2, to: file2)], timeoutInterval: 1.0e-5)
+            XCTFail()
+        } catch DownloadingError.timeout(cause: _) {
+            // OK
+        }
+    }
+
     func testCancel() async throws {
         let url1 = URL(string: "https://koherent.org/pi/pi100000.txt")!
         let url2 = URL(string: "https://koherent.org/pi/pi1000000.txt")!

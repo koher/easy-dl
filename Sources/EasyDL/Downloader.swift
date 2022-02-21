@@ -7,6 +7,7 @@ public final class Downloader {
     public let items: [Item]
     public let expectsPreciseProgress: Bool
     public let cachePolicy: CachePolicy
+    public let timeoutInterval: TimeInterval
     public let requestHeaders: [String: String]
     
     private var progressHandlers: [(Progress) -> Void] = []
@@ -30,6 +31,7 @@ public final class Downloader {
         items: [Item],
         expectsPreciseProgress: Bool = true,
         cachePolicy: CachePolicy = .returnCacheDataIfUnmodifiedElseLoad,
+        timeoutInterval: TimeInterval = 60.0,
         requestHeaders: [String: String] = [:]
     ) {
         let sessionDelegate = URLSessionDelegateObject()
@@ -37,6 +39,7 @@ public final class Downloader {
         self.items = items
         self.expectsPreciseProgress = expectsPreciseProgress
         self.cachePolicy = cachePolicy
+        self.timeoutInterval = timeoutInterval
         self.requestHeaders = requestHeaders
         
         sessionDelegate.object = self
@@ -99,9 +102,13 @@ public final class Downloader {
         var requestHeaders: [String: String] = self.requestHeaders
         requestHeaders.merge(item.requestHeaders) { _, value in value }
 
-        var request = URLRequest(url: item.url)
+        print("A timeoutInterval", item.timeoutInterval ?? timeoutInterval)
+        var request = URLRequest(
+            url: item.url,
+            cachePolicy: .reloadIgnoringLocalCacheData,
+            timeoutInterval: item.timeoutInterval ?? timeoutInterval
+        )
         request.httpMethod = "HEAD"
-        request.cachePolicy = .reloadIgnoringLocalCacheData
         request.setHeaderFields(requestHeaders, with: modificationDate)
         return try await withCheckedThrowingContinuation { continuation in
             if isCancelled {
@@ -110,7 +117,7 @@ public final class Downloader {
             }
             let task = session.dataTask(with: request) { _, response, error in
                 if let error = error {
-                    continuation.resume(throwing: DownloadingError.network(cause: error))
+                    continuation.resume(throwing: Self.error(fromURLSessionError: error))
                     return
                 }
                 
@@ -170,8 +177,12 @@ public final class Downloader {
         var requestHeaders: [String: String] = self.requestHeaders
         requestHeaders.merge(item.requestHeaders) { _, value in value }
 
-        var request = URLRequest(url: item.url)
-        request.cachePolicy = .reloadIgnoringLocalCacheData
+        print("B timeoutInterval", item.timeoutInterval ?? timeoutInterval)
+        var request = URLRequest(
+            url: item.url,
+            cachePolicy: .reloadIgnoringLocalCacheData,
+            timeoutInterval: item.timeoutInterval ?? timeoutInterval
+        )
         request.setHeaderFields(requestHeaders, with: modificationDate)
 
         return try await withCheckedThrowingContinuation { continuation in
@@ -310,12 +321,20 @@ public final class Downloader {
         public var url: URL
         public var destination: String
         public var cachePolicy: CachePolicy?
+        public var timeoutInterval: TimeInterval?
         public var requestHeaders: [String: String]
         
-        public init(url: URL, destination: String, cachePolicy: CachePolicy? = nil, requestHeaders: [String: String] = [:]) {
+        public init(
+            url: URL,
+            destination: String,
+            cachePolicy: CachePolicy? = nil,
+            timeoutInterval: TimeInterval? = nil,
+            requestHeaders: [String: String] = [:]
+        ) {
             self.url = url
             self.destination = destination
             self.cachePolicy = cachePolicy
+            self.timeoutInterval = timeoutInterval
             self.requestHeaders = requestHeaders
         }
         
@@ -343,7 +362,7 @@ extension Downloader {
             }
             
             if let error = error {
-                handler(.failure(DownloadingError.network(cause: error)))
+                handler(.failure(Downloader.error(fromURLSessionError: error)))
             }
         }
         
@@ -391,6 +410,20 @@ private extension Downloader {
         formatter.locale = Locale(identifier: "en_US")
         formatter.timeZone = TimeZone(abbreviation: "GMT")!
         return formatter
+    }
+}
+
+private extension Downloader {
+    static func error(fromURLSessionError error: Error) -> Error {
+        do {
+            let error: NSError = error as NSError
+            if error.domain == NSURLErrorDomain {
+                if error.code == NSURLErrorTimedOut {
+                    return DownloadingError.timeout(cause: error)
+                }
+            }
+        }
+        return DownloadingError.network(cause: error)
     }
 }
 
