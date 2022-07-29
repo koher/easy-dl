@@ -2,23 +2,45 @@ import Foundation
 
 extension Downloader {
     public convenience init(
-        items: [(URL, String)],
-        needsPreciseProgress: Bool = true,
-        commonStrategy: Strategy = .ifUpdated,
-        commonRequestHeaders: [String: String]? = nil
+        _ items: [(from: URL, to: String)],
+        expectsPreciseProgress: Bool = true,
+        cachePolicy: CachePolicy = .returnCacheDataIfUnmodifiedElseLoad,
+        timeoutInterval: TimeInterval = 60.0,
+        requestHeaders: [String: String] = [:]
     ) {
         self.init(
             items: items.map { Item(url: $0.0, destination: $0.1) },
-            needsPreciseProgress: needsPreciseProgress,
-            commonStrategy: commonStrategy,
-            commonRequestHeaders: commonRequestHeaders
+            expectsPreciseProgress: expectsPreciseProgress,
+            cachePolicy: cachePolicy,
+            timeoutInterval: timeoutInterval,
+            requestHeaders: requestHeaders
         )
     }
 
     public func progress(
         _ handler: @escaping (
-            _ bytesDownloaded: Int64,
-            _ bytesExpectedToDownload: Int64?
+            _ bytesDownloaded: Int,
+            _ bytesExpectedToDownload: Int?,
+            _ itemIndex: Int,
+            _ bytesDownloadedForItem: Int,
+            _ bytesExpectedToDownloadForItem: Int?
+        ) -> ()
+    ) {
+        progress { progress in
+            handler(
+                progress.bytesDownloaded,
+                progress.bytesExpectedToDownload,
+                progress.itemIndex,
+                progress.bytesDownloadedForItem,
+                progress.bytesExpectedToDownloadForItem
+            )
+        }
+    }
+    
+    public func progress(
+        _ handler: @escaping (
+            _ bytesDownloaded: Int,
+            _ bytesExpectedToDownload: Int?
         ) -> ()
     ) {
         progress { done, whole, _, _, _ in
@@ -26,15 +48,9 @@ extension Downloader {
         }
     }
     
-    public func progress(_ handler: @escaping (Float?) -> ()) {
-        if needsPreciseProgress {
-            progress { done, whole in
-                handler(whole.map { whole in Float(Double(done) / Double(whole)) })
-            }
-        } else {
-            progress { _, _, itemIndex, done, whole in
-                handler(whole.map { whole in (Float(itemIndex) + Float(Double(done) / Double(whole))) / Float(self.items.count) })
-            }
+    public func progressRate(_ handler: @escaping (Float) -> ()) {
+        progress { progress in
+            handler(progress.rate)
         }
     }
 }
